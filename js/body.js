@@ -11,6 +11,55 @@ with (paper){
     }
 
 
+    var arm_front = function(){
+
+        // Interface:
+        return {
+
+            // Execute when enter the frame:
+            onFrame: function(){
+
+            }
+        }
+    }
+
+    
+    var arm_back = function(){
+
+        // Interface:
+        return {
+
+            // Execute when enter the frame:
+            onFrame: function(){
+
+            }
+        }
+    }    
+
+    var arm = function(){
+
+        // Interface:
+        return {
+
+            // Execute when enter the frame:
+            onFrame: function(){
+
+            }
+        }
+    }
+
+
+    var head = function(){
+
+            // Interface:
+            return {
+
+                // Execute when enter the frame:
+                onFrame: function(){
+
+                }
+            }
+        }
      
     var body = function(){
      // Huge circle:
