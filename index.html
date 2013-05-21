@@ -4,6 +4,9 @@
 <!-- Load the Paper.js library -->
 <script type="text/javascript" src="js/paper.js"></script>
 <script type="text/javascript" src="js/zepto.min.js"></script>
+<!-- Library to implement the event: -->
+<script type="text/javascript" src="js/smokesignals.js"></script>
+<script type="text/javascript" src="js/animation.js"></script>
 <script type="text/javascript" src="js/body.js"></script>
 <script type="text/javascript" language="javascript">
     paper.install(window);
@@ -16,14 +19,18 @@
         paper.view.draw();
 
         var firstPoint = new Point(10, 20);
-var secondPoint = new Point(5, 5);
+		var secondPoint = new Point(5, 5);
 
-console.log(firstPoint.add(secondPoint));
+
+		
+		// draw the stuff (if not, it is drawn when mouse is mouved)
+		paper.view.draw();
     });
 </script>
 </head>
 <body>
 
     <canvas id="myCanvas" resize></canvas>
+    <script>document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')</script>
 </body>
 </html>
