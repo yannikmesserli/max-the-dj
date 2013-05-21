@@ -11,7 +11,7 @@
 var Loop = function(){
 	
     // period to synch all the Loop together:
-    var period = 1700;
+    var period = 700;
 
     // Keep track of all the animation we want to play:
     var animations = [];
@@ -121,14 +121,14 @@ var Loop = function(){
 }
 
 
-var Movement = function(min, max, callback){
+var Movement = function(_min, _max, callback){
 	// List of animations registered:
 	var interface = new Item();
 	interface._draw = function(){};
 
 
-	var max = max || 1.0;
-	var min = min || 0.0;
+	var max = _max || 1.0;
+	var min = _min || 0.0;
 	
     // Setup a Movement that does not nothing:
 	if(callback === undefined ){    
@@ -148,8 +148,8 @@ var Movement = function(min, max, callback){
     // Intern class
     var Animation = function(duration, _from, to){
             
-    	interface.isRunning = true;
-    	// Stupid var to catch the time:
+    interface.isRunning = true;
+    // Stupid var to catch the time:
 	var isNotSet = true;
             // reset
             startingTime = -1;

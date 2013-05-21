@@ -10,7 +10,7 @@
  */
 
 with (paper){
-    var Dancer = function(base, period ){
+    var Dancer = function(base ){
 
         /*
             - base: is the point from which every other point is attached to
@@ -18,10 +18,16 @@ with (paper){
 
          */
 
+        // the interface is paperjs Group 
         var _dancer = new Group();
 
+        // Scale of all the body:
+        // this is for comodity, so that I can work at the size I want:
+        var scale = 1.0;
 
+        var typesArm = ['sym', 'para', 'rand'];
 
+        var type_arm = typesArm[0];
 
 
         // Constructor:
@@ -29,11 +35,32 @@ with (paper){
             
             // Just draw a body first:
             var o = body();
+            var h = head();
            
-            var left_arm = new arm( new Point(120, 250));
-           
-            var right_arm = new arm( new Point(280, 250));
-            _dancer.addChildren([o, left_arm, right_arm]);
+            var left_arm = new Arm();
+            var rightset = {
+                 anchor: new Point(-50, 0)
+            };
+            if( type_arm == 'sym'){
+                rightset = {
+                    rotate: {
+                        modifVal: function(a){ return (180 - a)},
+                        max: 200,
+                        min: 90
+                    },
+                    foldElbow: {
+                        max: 160,
+                        min: 0,
+                        modifVal: function(a){ return ( - a); }
+                    },
+                    anchor: new Point(-60, 0)
+                };
+            }
+            var right_arm = new Arm( rightset);
+            
+
+
+            //_dancer.addChildren([o, left_arm, right_arm]);
             
 
             // setup a new loop:
@@ -118,7 +145,7 @@ with (paper){
             // });
 
             
-            right_arm.foldElbow.start(0.5, 400);
+            //right_arm.foldElbow.start(0.5, 400);
 
 
             return _dancer;
@@ -132,8 +159,9 @@ with (paper){
 
 
         // The arms:
-        var arm = function(anchor, options){
+        var Arm = function(options){
 
+            var __id__ = new Date().getTime();
             /* Arm has 3 main points:
              * - the starting point
              * - the elbow point
@@ -154,12 +182,15 @@ with (paper){
                 end: new Point(0, 100),
                 rotate: {
                     max: 200,
-                    min: 90
+                    min: 90,
+                    modifVal: function(a){ return a; }
                 },
                 foldElbow: {
                     max: 160,
-                    min: 0
-                }
+                    min: 0,
+                    modifVal: function(a){ return a; }
+                },
+                anchor: new Point(90,0)
             };
 
             var settings = $.extend({}, default_settings, options || {}) ;
@@ -175,8 +206,8 @@ with (paper){
                 
                 var vect = pt.elbow.subtract(pt.begin);
                 var vect2 = pt.end.subtract(pt.elbow);
-                vect2.angle = vect2.angle - vect.angle + val;
-                vect.angle = val;
+                vect2.angle = vect2.angle - vect.angle + settings.rotate.modifVal(val);
+                vect.angle = settings.rotate.modifVal(val);
                 pt.elbow = vect.add(pt.begin);
                 pt.end =  vect2.add(pt.elbow); 
                 _arm.emit('changed');
@@ -193,12 +224,12 @@ with (paper){
                 var alpha = vect1.angle;
                 // change the upper part:
                 var vect2 = pt.elbow.subtract(pt.begin);
-                vect2.angle = alpha + beta;
+                vect2.angle = alpha + settings.foldElbow.modifVal(beta);
                 pt.end =  vect2.add(pt.elbow); 
                 _arm.emit('changed');
 
             }).on('terminate', function(){
-                //console.log('terminate');
+                //console.log(__id__ + ' is terminate');
             });
             
             var init = function(){
@@ -214,9 +245,10 @@ with (paper){
 
 
             var construct_point = function(){
-                pt.begin = anchor || new Point(10,0);
-                pt.elbow = pt.begin.add(settings.elbow);
-                pt.end = pt.elbow.add(settings.end);
+                pt.begin = base.subtract( settings.anchor.multiply(scale) ) ;
+                pt.elbow = pt.begin.add(settings.elbow.multiply(scale));
+                pt.end = pt.elbow.add(settings.end.multiply(scale));
+                _arm.pt = pt;
             }
 
 
@@ -260,24 +292,6 @@ with (paper){
                 }
 
 
-                part_arm.moveStartTo = function(new_p, t){
-                    moveGenTo(__starting_point__, __ending_point__, new_p, t);
-                }
-
-                part_arm.moveEndTo = function(new_p, t){
-                    moveGenTo(__ending_point__, __starting_point__, new_p, t);
-                }
-
-
-                var moveGenTo = function( string_pt, string_pt2, _new_p, _t){
-                    if( _t > 0 && _t < 1){
-                        
-                        var t = _t || 1;
-                        pt[string_pt] = pt[string_pt].add(  _new_p.subtract(pt[string_pt]).multiply( new Point(t, t) ));
-                        part_arm.updateView();
-                    }
-                    return part_arm;
-                }
 
 
                 // Interface:
@@ -297,7 +311,9 @@ with (paper){
                         fillColor: '#FFF0B3'
                     });
                     handy.closed = true; //handy.selected = true;
+                    handy.scale(scale);
                     handy.position = pos;
+
 
                     return handy;
                 }
@@ -348,86 +364,79 @@ with (paper){
             }
         }
          
-        var body = function(){
-
-            var _body = new Group();
-         // Huge circle:
-            var big = new Path.Circle({
-                center: [200, 300],
-                radius: 100,
-            });
+        var body = function(options){
             
-            // Small circle:
-            var small = new Path.Circle({
-                center: [200, 200],
-                radius: 70,
-            });
-            // Styling for all:
-            var style = {
-                fillColor: 'white',
-                strokeColor: 'black',
-                strokeWidth: 1
+
+
+            var default_settings = {
+                pt: [
+                    new Point(0, -90),
+                    new Point(70, -70),
+                    new Point(150, 40), // right middle
+                    // bottom
+                    new Point(50, 220),
+                    new Point(-50, 220),
+
+                    new Point(-150, 40), // left middle
+                    new Point(-70, -70), // top left
+                ],
+                handle1: new Point(0, 50),
+                handle2: new Point(40, 10),
+                handle3: new Point(40, -10)
             };
 
-            small.style = style;
-            big.style = style;
-            small.selected = true;
-            big.selected = true;
+            var settings = $.extend({}, default_settings, options || {}) ;
 
-            var center1 = small.position;
-            var center2 = big.position;
-            var radius1 = small.bounds.width / 2;
-            var radius2 = big.bounds.width / 2;
-            var pi2 = Math.PI / 2;
-            var d = center1.getDistance(center2);
-            var u1 = Math.acos((radius1 * radius1 + d * d - radius2 * radius2) /
-                        (2 * radius1 * d)),
-                u2 = Math.acos((radius2 * radius2 + d * d - radius1 * radius1) /
-                        (2 * radius2 * d));
+            var _body = new Group();
             
 
-            
-            var angle1 = center2.getAngleInRadians(center1) + Math.PI/2.3;
-            var angle2 = Math.acos((radius1 - radius2) / d);
-            var angle1a = angle1 + u1 + (angle2 - u1) * 0.5;
-            var angle1b = angle1 - u1 - (angle2 - u1) * 0.5;
-            var angle2a = angle1 + Math.PI - u2 - (Math.PI - u2 - angle2) * 0.5;
-            var angle2b = angle1 - Math.PI + u2 + (Math.PI - u2 - angle2) * 0.5;
-            var p1a = center1.add(   getVector(angle1a, radius1));
-            var p1b = center1.add(   getVector(angle1b, radius1));
-            var p2a = center2.add(   getVector(angle2a, radius2));
-            var p2b = center2.add(   getVector(angle2b, radius2));
+            var contour = new Path();
+            contour.strokeColor = 'black';
 
-
-
-            // define handle length by the distance between
-            // both ends of the curve to draw
-            var totalRadius = (radius1 + radius2);
-            var d2 = Math.min(0.5 * 2.4, (p1a.subtract(p2a)).length / totalRadius);
-
-            // case circles are overlapping:
-            d2 *= Math.min(1, d * 2 / (radius1 + radius2));
-
-            radius1 *= d2;
-            radius2 *= d2;
-
-            var path = new Path({
-                segments: [p1a, p2a, p2b, p1b],
-                style:  {
-                    fillColor: 'black',
-                },
-                closed: true
+            $.each(settings.pt, function(i, pt){
+                contour.add( base.add( pt.multiply(scale) ) );
             });
-            var segments = path.segments;
-            segments[0].handleOut = getVector(angle1a - pi2, radius1);
-            segments[1].handleIn = getVector(angle2a + pi2, radius2);
-            segments[2].handleOut = getVector(angle2b - pi2, radius2);
-            segments[3].handleIn = getVector(angle1b + pi2, radius1);
 
-            path.selected = true;
+            contour.closed = true;
 
-            _body.addChildren([big, small, path]);
+
+            //contour.fullySelected = true;
+            contour.smooth();
+            
+            contour.segments[2].handleOut =  settings.handle1.multiply(scale);
+            contour.segments[5].handleIn =  settings.handle1.multiply(scale);
+
+
+            contour.segments[3].handleIn =  settings.handle3.multiply(scale);
+            contour.segments[4].handleIn =  settings.handle2.multiply(scale);
+
+            contour.segments[3].handleOut =  settings.handle3.multiply(-scale);
+            contour.segments[4].handleOut =  settings.handle2.multiply(-scale);
+           
+            
+
             return _body;
+        }
+
+
+        var head = function(options){
+            
+
+
+            var default_settings = {
+                anchor: new Point(0, -70)
+            };
+
+            var settings = $.extend({}, default_settings, options || {}) ;
+
+            var _head = new Group();
+            
+
+            var contour = new Path.Circle( base.add(settings.anchor.multiply(scale)) , 65);
+            contour.strokeColor = 'black';
+            contour.fillColor = '#fff';
+
+            return _head;
         }
 
 
