@@ -10,7 +10,7 @@
  */
 
 with (paper){
-    var Dancer = function(base ){
+    var Dancer = function(_base ){
 
         /*
             - base: is the point from which every other point is attached to
@@ -23,12 +23,31 @@ with (paper){
 
         // Scale of all the body:
         // this is for comodity, so that I can work at the size I want:
-        var scale = 1.0;
+        var scale = 0.2;
 
+        // The point from which we are constructing everything:
+        var base = _base || paper.view.center;
+
+        // For the arm... to be moved somewhere else:
         var typesArm = ['sym', 'para', 'rand'];
 
         var type_arm = typesArm[0];
 
+
+        // For the color.... to be moved somewhere else:
+        // 
+        var colors = {
+            short: 'black',
+            arm_right: {
+                front: 'black',
+                back: 'black'
+            },
+            arm_left: {
+                front: 'black',
+                back: 'black'
+            },
+            flesh: '#FFF0B3'
+        }
 
         // Constructor:
         var init = function(){
@@ -39,7 +58,8 @@ with (paper){
            
             var left_arm = new Arm();
             var rightset = {
-                 anchor: new Point(-50, 0)
+                 anchor: new Point(-110, 0),
+                 type: 'arm_right'
             };
             if( type_arm == 'sym'){
                 rightset = {
@@ -53,7 +73,8 @@ with (paper){
                         min: 0,
                         modifVal: function(a){ return ( - a); }
                     },
-                    anchor: new Point(-60, 0)
+                    anchor: new Point(-110, 0),
+                    type: 'arm_right'
                 };
             }
             var right_arm = new Arm( rightset);
@@ -138,14 +159,7 @@ with (paper){
 
            
             
-            // left_arm.rotate.start(0.8, 500).once('terminate', function(){
-            //     left_arm.foldElbow.start(0.7, 200).once('terminate', function(){
-            //         left_arm.foldElbow.start(0.6, 0.1, 400);
-            //     });
-            // });
-
             
-            //right_arm.foldElbow.start(0.5, 400);
 
 
             return _dancer;
@@ -172,7 +186,10 @@ with (paper){
              */
 
             var pt = {};
+
+            // Our arm object:
             var _arm = new Group();
+
 
             // Add event handler:
             smokesignals.convert(_arm);
@@ -190,7 +207,8 @@ with (paper){
                     min: 0,
                     modifVal: function(a){ return a; }
                 },
-                anchor: new Point(90,0)
+                anchor: new Point(110,0),
+                type: 'arm_left'
             };
 
             var settings = $.extend({}, default_settings, options || {}) ;
@@ -308,10 +326,10 @@ with (paper){
                     handy.set({
                         strokeColor: '#000',
                         strokeWidth: 1,
-                        fillColor: '#FFF0B3'
+                        fillColor: colors.flesh
                     });
                     handy.closed = true; //handy.selected = true;
-                    handy.scale(scale);
+                    handy.scale(scale * 2);
                     handy.position = pos;
 
 
@@ -321,11 +339,13 @@ with (paper){
 
                 var draw = function(start, end){
                     
-                    var armi = new Path([ start, end] );
+                    var armi = new Path([ start.add(new Point(10*scale, 0)), start.subtract(new Point(10*scale, 0)) , end.subtract(new Point(10*scale, 0)), end.add(new Point(10*scale, 0))] );
                     armi.style = {
-                        strokeColor: '#000',
-                        strokeWidth: 1
+                        strokeColor: 'black',
+                        strokeWidth: 0.5,
+                        fillColor: colors[settings.type].front
                     };
+                    armi.closed = true;
 
 
                     return [armi, hand(end) ];
@@ -339,7 +359,23 @@ with (paper){
 
             // back part of the arm
             var arm_back = function(){
-                var tmp = armGen('begin', 'elbow');
+
+                var draw = function(start, end){
+                    
+                    var armi = new Path([ start.add(new Point(10*scale, 0)), start.subtract(new Point(10*scale, 0)) , end.subtract(new Point(10*scale, 0)), end.add(new Point(10*scale, 0))] );
+                    armi.style = {
+                        strokeColor: 'black',
+                        strokeWidth: 0.5,
+                        fillColor: colors[settings.type].front
+                    };
+                    armi.closed = true;
+
+
+                    return [armi];
+
+                }
+
+                var tmp = armGen('begin', 'elbow', draw);
                 
 
                 return tmp;
@@ -382,40 +418,80 @@ with (paper){
                 ],
                 handle1: new Point(0, 50),
                 handle2: new Point(40, 10),
-                handle3: new Point(40, -10)
+                handle3: new Point(40, -10),
+                ptStartGrid: new Point(150, 90)
             };
 
             var settings = $.extend({}, default_settings, options || {}) ;
 
+
+            // Interface:
             var _body = new Group();
             
-
-            var contour = new Path();
-            contour.strokeColor = 'black';
-
-            $.each(settings.pt, function(i, pt){
-                contour.add( base.add( pt.multiply(scale) ) );
-            });
-
-            contour.closed = true;
-
-
-            //contour.fullySelected = true;
-            contour.smooth();
+            // Private variable for the overall contour:
+            var contour = null;
             
-            contour.segments[2].handleOut =  settings.handle1.multiply(scale);
-            contour.segments[5].handleIn =  settings.handle1.multiply(scale);
+            // Private function that construct the contour from the point:
+            var createContour = function(){
+
+                if(contour){
+                    contour.remove();
+                }
+
+                contour = new Path();
+                contour.strokeColor = 'black';
+                contour.strokeWidth = 1;
+
+                $.each(settings.pt, function(i, pt){
+                    contour.add( base.add( pt.multiply(scale) ) );
+                });
+
+                contour.closed = true;
 
 
-            contour.segments[3].handleIn =  settings.handle3.multiply(scale);
-            contour.segments[4].handleIn =  settings.handle2.multiply(scale);
+                //contour.fullySelected = true;
+                contour.smooth();
+                
+                contour.segments[2].handleOut =  settings.handle1.multiply(scale);
+                contour.segments[5].handleIn =  settings.handle1.multiply(scale);
 
-            contour.segments[3].handleOut =  settings.handle3.multiply(-scale);
-            contour.segments[4].handleOut =  settings.handle2.multiply(-scale);
-           
+
+                contour.segments[3].handleIn =  settings.handle3.multiply(scale);
+                contour.segments[4].handleIn =  settings.handle2.multiply(scale);
+
+                contour.segments[3].handleOut =  settings.handle3.multiply(-scale);
+                contour.segments[4].handleOut =  settings.handle2.multiply(-scale);
+            }
+
+            // Create a shirt with strips:
+            var makeBarriole = function(){
+
+                var mask = contour.clone();
+                mask.clipMask = true;
+                _body.addChild(mask);
+
+                for (var i = 0; i < 12; i++) {
+                    var start = base.subtract(settings.pt[0].add(new Point(150, -50*(i -4) - 3 )  ).multiply(scale));
+                    var size = new Size(300*scale, 25*scale);
+                    var r = new Path.Rectangle( start, size);
+                    r.fillColor = colors.short;
+                    _body.addChild(r);
+                };
+            }
+
+            // Create a plain color shirt
+            var makePlain = function(){
+                contour.fillColor = colors.short;
+            }
             
+            var init = function(){
+                createContour();
+                makeBarriole();
+                return _body
+            }
 
-            return _body;
+
+            return init();
         }
 
 
@@ -432,9 +508,9 @@ with (paper){
             var _head = new Group();
             
 
-            var contour = new Path.Circle( base.add(settings.anchor.multiply(scale)) , 65);
+            var contour = new Path.Circle( base.add(settings.anchor.multiply(scale)) , 65*scale);
             contour.strokeColor = 'black';
-            contour.fillColor = '#fff';
+            contour.fillColor = colors.flesh;
 
             return _head;
         }
