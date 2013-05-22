@@ -23,7 +23,7 @@ with (paper){
 
         // Scale of all the body:
         // this is for comodity, so that I can work at the size I want:
-        var scale = 0.2;
+        var scale = 0.15;
 
         // The point from which we are constructing everything:
         var base = _base || paper.view.center;
@@ -37,7 +37,7 @@ with (paper){
         // For the color.... to be moved somewhere else:
         // 
         var colors = {
-            short: 'black',
+            short: ['black', '#3D4665'],
             arm_right: {
                 front: 'black',
                 back: 'black'
@@ -339,7 +339,11 @@ with (paper){
 
                 var draw = function(start, end){
                     
-                    var armi = new Path([ start.add(new Point(10*scale, 0)), start.subtract(new Point(10*scale, 0)) , end.subtract(new Point(10*scale, 0)), end.add(new Point(10*scale, 0))] );
+                    var a = new Point(10*scale, 0);
+                    var vect = end.subtract(start);
+                    a.angle = vect.angle + 90;
+
+                    var armi = new Path([ start.add(a), start.subtract(a) , end.subtract(a), end.add(a)] );
                     armi.style = {
                         strokeColor: 'black',
                         strokeWidth: 0.5,
@@ -362,7 +366,11 @@ with (paper){
 
                 var draw = function(start, end){
                     
-                    var armi = new Path([ start.add(new Point(10*scale, 0)), start.subtract(new Point(10*scale, 0)) , end.subtract(new Point(10*scale, 0)), end.add(new Point(10*scale, 0))] );
+                    var a = new Point(10*scale, 0);
+                    var vect = end.subtract(start);
+                    a.angle = vect.angle + 90;
+
+                    var armi = new Path([ start.add(a), start.subtract(a) , end.subtract(a), end.add(a)] );
                     armi.style = {
                         strokeColor: 'black',
                         strokeWidth: 0.5,
@@ -465,7 +473,7 @@ with (paper){
 
             // Create a shirt with strips:
             var makeBarriole = function(){
-
+                contour.fillColor = colors.short[1];
                 var mask = contour.clone();
                 mask.clipMask = true;
                 _body.addChild(mask);
@@ -474,19 +482,24 @@ with (paper){
                     var start = base.subtract(settings.pt[0].add(new Point(150, -50*(i -4) - 3 )  ).multiply(scale));
                     var size = new Size(300*scale, 25*scale);
                     var r = new Path.Rectangle( start, size);
-                    r.fillColor = colors.short;
+                    r.fillColor = colors.short[0];
                     _body.addChild(r);
                 };
+
+
             }
 
             // Create a plain color shirt
             var makePlain = function(){
-                contour.fillColor = colors.short;
+                contour.fillColor = colors.short[0];
             }
             
             var init = function(){
+                
                 createContour();
+                _body.addChild(contour);
                 makeBarriole();
+
                 return _body
             }
 

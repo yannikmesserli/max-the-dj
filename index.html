@@ -14,7 +14,11 @@
         paper.setup('myCanvas');
         
         // Create a dancer in the middle of the page:
-        new Dancer(view.center);
+        for (var i = 0; i <= 10; i++) {
+            new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) );
+        };
+
+        
         
 
         paper.view.draw();
@@ -29,7 +33,7 @@
     });
 </script>
 </head>
-<body>
+<body style="background: black url(img/bg.jpg) repeat;">
 
     <canvas id="myCanvas" resize></canvas>
     <script>document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')</script>
