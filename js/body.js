@@ -19,160 +19,225 @@ with (paper){
          */
 
         // the interface is paperjs Group 
-        var _dancer = new Group();
+        var __dancer__ = new Group();
+
+        // The dance has, like every humain, some arms, a head, and a body:
+        var left_arm = null, right_arm = null, body = null, head = null; 
 
         // Scale of all the body:
         // this is for comodity, so that I can work at the size I want:
-        var scale = 0.15;
+        var scale = 0.17; // 0.17
 
         // The point from which we are constructing everything:
         var base = _base || paper.view.center;
 
+
+        // Array of all dance register:
+        // (a dance is a loop)
+        var dances = {};
+
         // For the arm... to be moved somewhere else:
         var typesArm = ['sym', 'para', 'rand'];
 
-        var type_arm = typesArm[0];
+        var type_arm = typesArm[2];
 
 
         // For the color.... to be moved somewhere else:
         // 
-        var colors = {
-            short: ['black', '#3D4665'],
-            arm_right: {
-                front: 'black',
-                back: 'black'
-            },
-            arm_left: {
-                front: 'black',
-                back: 'black'
-            },
-            flesh: '#FFF0B3'
-        }
+        var colors = null;
 
         // Constructor:
         var init = function(){
             
-            // Just draw a body first:
-            var o = body();
-            var h = head();
+            // [TODO] change
+            colors = RandomColor();
+            constructPart();
+            
+            
+            return __dancer__;
+
+        }
+
+
+        //////////////////////////////////////////////
+        //                                          //
+        //               PUBLIC METHODS             //
+        //                                          //
+        //////////////////////////////////////////////
+
+   
+        // generate a completely random dancer:
+        __dancer__.generateRandom = function(){
+
+            type_arm = typesArm[ Math.round(Math.random()*3 - 0.2) ];
+            constructPart();
+
+            /////////////////////
+            // LOOP FOR THE ARM:
+            // Setup a new loop:
+            dances.loopLeftElbow = randomAnim( left_arm.foldElbow);
+
+            // Animation for the left Elbow:
+            if(type_arm == 'sym' || type_arm == 'para')
+                dances.loopRightElbow = dances.loopLeftElbow.replicateFor(right_arm.foldElbow);  // Do same symmetric to the right:
+            else
+                dances.loopRightElbow = randomAnim(right_arm.foldElbow); // Or generate random animation
+        
+        
            
-            var left_arm = new Arm();
+
+
+           // Setup a new loop for the roation of the arm:
+            dances.loopLeftArm = randomAnim( left_arm.rotate);
+
+            // Setup animation for the right Elbow:
+            if(type_arm == 'sym' || type_arm == 'para')
+                dances.loopRightArm = dances.loopLeftArm.replicateFor(right_arm.rotate); // Do same symmetric to the right:
+            else
+                dances.loopRightArm = randomAnim(right_arm.rotate); // generate random one
+
+
+
+
+           return __dancer__;
+        }
+
+        
+
+
+        __dancer__.startDance = function(){
+            $.each(dances, function(i, dance){
+                dance.start();
+            });
+            return __dancer__;
+        }
+
+        //////////////////////////////////////////////
+        //                                          //
+        //             PRIVATE METHODS              //
+        //                                          //
+        //////////////////////////////////////////////
+
+
+        // Internal function that create a random Loop for the movement
+        var randomAnim = function(movement){
+
+            var loop = new Loop();
+            loop.addRandom(movement);
+            var prob = 0.3;
+            while( Math.random() < prob ){
+                loop.addRandom(movement);
+                prob = prob/2;
+            }
+            return loop;
+        }
+
+
+        var constructPart = function(){
+
+            __dancer__.removeChildren();
+
+            // Just draw a body first:
+            body = Body();
+            head = Head();
+
+            left_arm = new Arm();
             var rightset = {
                  anchor: new Point(-110, 0),
                  type: 'arm_right'
             };
-            if( type_arm == 'sym'){
-                rightset = {
-                    rotate: {
-                        modifVal: function(a){ return (180 - a)},
-                        max: 200,
-                        min: 90
-                    },
-                    foldElbow: {
-                        max: 160,
-                        min: 0,
-                        modifVal: function(a){ return ( - a); }
-                    },
-                    anchor: new Point(-110, 0),
-                    type: 'arm_right'
+            
+            if( type_arm == 'sym' || type_arm == 'rand'){
+                rightset.rotate= {
+                    modifVal: function(a){ return (180 - a)},
+                    max: 200,
+                    min: 90
+                };
+                rightset.foldElbow = {
+                    max: 110,
+                    min: 0,
+                    modifVal: function(a){ return ( - a); }
                 };
             }
-            var right_arm = new Arm( rightset);
+            right_arm = new Arm( rightset);
             
+            __dancer__.addChildren([body, head, right_arm, left_arm]);
 
-
-            //_dancer.addChildren([o, left_arm, right_arm]);
-            
-
-            // setup a new loop:
-           new Loop().add(
-                    [
-                        {
-                            'end': 0.7,
-                            'Movement':  left_arm.foldElbow,
-                            'duration': 0.2
-                        },
-                        {
-                            'end': 0.1,
-                            'Movement':  left_arm.foldElbow,
-                            'duration': 0.5
-                        },
-                        {
-                            'end': 0.4,
-                            'Movement':  left_arm.foldElbow,
-                            'duration': 0.3
-                        }
-                    ]
-                ).start();
-
-
-           new Loop().add(
-                    [
-                        {
-                            'end': 0.7,
-                            'Movement':  right_arm.foldElbow,
-                            'duration': 0.2
-                        },
-                        {
-                            'end': 0.1,
-                            'Movement':  right_arm.foldElbow,
-                            'duration': 0.5
-                        },
-                        {
-                            'end': 0.4,
-                            'Movement':  right_arm.foldElbow,
-                            'duration': 0.3
-                        }
-                    ]
-                ).start();
-
-            new Loop().add(
-                    [
-                        {
-                            'end': 0.4,
-                            'Movement':  left_arm.rotate,
-                            'duration': 0.5
-                        },
-                        {
-                            'end': 0.9,
-                            'Movement':  left_arm.rotate,
-                            'duration': 0.5
-                        }
-                    ]
-                ).start();
-
-
-            new Loop().add(
-                    [
-                        {
-                            'end': 0.4,
-                            'Movement':  right_arm.rotate,
-                            'duration': 0.5
-                        },
-                        {
-                            'end': 0.9,
-                            'Movement':  right_arm.rotate,
-                            'duration': 0.5
-                        }
-                    ]
-                ).start();
-
-           
-            
-            
-
-
-            return _dancer;
 
         }
 
-   
+        // Give back random color scheme:
+        var RandomColor = function(){
+
+            // Ugly right now
+            // [TODO]
+            var colors1 = {
+                short: ['#3D4665', 'black'],
+                arm_right: {
+                    front: 'black',
+                    back: 'black'
+                },
+                arm_left: {
+                    front: 'black',
+                    back: 'black'
+                },
+                flesh: '#FFF0B3'
+            }
+
+            var colors2 = {
+                short: ['#314f9b', '#a62323'],
+                arm_right: {
+                    front: '#314f9b',
+                    back: '#314f9b'
+                },
+                arm_left: {
+                    front: '#314f9b',
+                    back: '#314f9b'
+                },
+                flesh: '#FFF0B3'
+            }
+
+            var colors3 = {
+                short: ['#2383a6', '#46498b'],
+                arm_right: {
+                    front: '#2383a6',
+                    back: '#2383a6'
+                },
+                arm_left: {
+                    front: '#2383a6',
+                    back: '#2383a6'
+                },
+                flesh: '#FFF0B3'
+            }
+            var tmp = null;
+            var p = Math.random();
+            if(p < 0.33){
+                tmp = colors1;
+            }else if( p < 0.66){
+                tmp = colors2;
+            }else{
+                tmp = colors3;
+            }
 
 
+            return tmp;
+
+        }
 
 
-
-        // The arms:
+        //////////////////////////////////////////////
+        //                                          //
+        //               PRIVATE CLASS              //
+        //                                          //
+        //////////////////////////////////////////////
+        //
+        
+        //////////////////////////////////////////////
+        // 
+        //  Arm: class to create an arm with 
+        //  a back part and a front part
+        // 
+        
         var Arm = function(options){
 
             var __id__ = new Date().getTime();
@@ -203,7 +268,7 @@ with (paper){
                     modifVal: function(a){ return a; }
                 },
                 foldElbow: {
-                    max: 160,
+                    max: 110,
                     min: 0,
                     modifVal: function(a){ return a; }
                 },
@@ -329,7 +394,7 @@ with (paper){
                         fillColor: colors.flesh
                     });
                     handy.closed = true; //handy.selected = true;
-                    handy.scale(scale * 2);
+                    handy.scale(scale * 2.5);
                     handy.position = pos;
 
 
@@ -395,20 +460,14 @@ with (paper){
             
         }
 
-
-        var head = function(){
-
-            // Interface:
-            return {
-
-                // Execute when enter the frame:
-                onFrame: function(){
-
-                }
-            }
-        }
-         
-        var body = function(options){
+        //////////////////////////////////////////////
+        // 
+        //  Body: class to create an body with 
+        //  some movement
+        // 
+        
+        // Class for the body
+        var Body = function(options){
             
 
 
@@ -416,12 +475,12 @@ with (paper){
                 pt: [
                     new Point(0, -90),
                     new Point(70, -70),
-                    new Point(150, 40), // right middle
+                    new Point(100, 40), // right middle
                     // bottom
                     new Point(50, 220),
                     new Point(-50, 220),
 
-                    new Point(-150, 40), // left middle
+                    new Point(-100, 40), // left middle
                     new Point(-70, -70), // top left
                 ],
                 handle1: new Point(0, 50),
@@ -498,7 +557,12 @@ with (paper){
                 
                 createContour();
                 _body.addChild(contour);
-                makeBarriole();
+
+                // [TODO] change
+                if(Math.random() > 0.5 )
+                    makeBarriole();
+                else
+                    makePlain();
 
                 return _body
             }
@@ -507,10 +571,15 @@ with (paper){
             return init();
         }
 
-
-        var head = function(options){
+        //////////////////////////////////////////////
+        // 
+        //  Head: class to create an head 
+        //  
+        // 
+        
+        var Head = function(options){
             
-
+            var _head = new Group();
 
             var default_settings = {
                 anchor: new Point(0, -70)
@@ -525,8 +594,16 @@ with (paper){
             contour.strokeColor = 'black';
             contour.fillColor = colors.flesh;
 
+            _head.addChildren([contour]);
+
             return _head;
         }
+
+        // 
+        // End of of the private class
+        //
+        ////////////////////////////////////////// 
+        
 
 
         // Interface:

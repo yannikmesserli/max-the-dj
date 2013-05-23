@@ -8,10 +8,13 @@
 
     Rewind let play the animation in a back and forth manner
  */
-var Loop = function(){
+var Loop = function(_animations){
 	
+    // Interface
+    var _loop = {};
+
     // period to synch all the Loop together:
-    var period = 700;
+    var period = 400;
 
     // Keep track of all the animation we want to play:
     var animations = [];
@@ -27,6 +30,7 @@ var Loop = function(){
 
     // Function that add an object animation to the list of the animations to do
     var add = function(animation, i){
+        
         if(!isRunning){
 
             // If no end has been setup:
@@ -38,36 +42,34 @@ var Loop = function(){
                 animation.Movement = new Movement();
             }
 
-            animations[i] = animation;
+            // If i is set, push it at the right place:
+            if(i !== undefined){
+                animations[i] = animation;
+            }else{
+                animations.push( animation);
+            }
         }
     }
 
-	this.add = function(animations){
+	_loop.add = function(animations){
         $.each(animations, function(index, anim){
             add(anim, index);
         });
         // for chaining:
-        return this;
+        return _loop;
 	}
 
 
-    this.start = function(){
+    _loop.start = function(){
         isRunning = true;
-
-        // Randomize the duration:
-        var durations = [];
-        var accum = 0.0;
-        for (var i = 0; i < animations.length - 1; i++) {
-            durations[i] = Math.random() / (animations.length-1) * period;
-            accum += durations[i];
-        };
-        durations[animations.length - 1] = period - accum;
+        
+        
 
         // Function recursive to chain the animations
         function prepareNext(index){
              
             var anim = animations[index];
-
+            
             anim.Movement.once('start', function(curPos){
                 if(anim.init === undefined)
                     anim.init = curPos;
@@ -93,20 +95,22 @@ var Loop = function(){
 
                 
                 
-                // recursively call this function:
+                // recursively call _loop function:
                 prepareNext(next_anim);
             });
-
-            // Start this current animation
-            anim.Movement.start(anim.end, anim.duration * period );
+            
+            // Compute the duration if needed:
+            var last = anim.duration? anim.duration * period:  period / animations.length;
+            // Start _loop current animation
+            anim.Movement.start(anim.end, last  );
         }
 
         prepareNext(indexAnim);
 
-        return this;
+        return _loop;
     }
 
-    this.stop = function(){
+    _loop.stop = function(){
         isRunning = false;
         // Stop any animation
         $.each(animations, function(index, anim) {
@@ -115,9 +119,42 @@ var Loop = function(){
         // we need also to reset
         // 
         
-        return this;
+        return _loop;
     }
-	
+
+
+    _loop.addRandom = function(mouvement){
+        add({
+            'end': Math.random(),
+            'Movement': mouvement
+        });
+    }
+
+    _loop.replicateFor = function(mov){
+        var newanimations = [];
+        $.each(animations, function(i, a){
+             newanimations[i] = {
+                'end': a.end,
+                'Movement': mov
+             };
+        });
+        return new Loop(newanimations);
+    }
+
+    _loop.__defineGetter__('animations', function(){
+        return animations;
+    });
+
+
+	// Init here,
+    // Copy all the animation of this loop 
+    if(_animations){
+        $.each(_animations, function(i, anim){
+            add(anim, i);
+        });
+    }
+
+    return _loop;
 }
 
 

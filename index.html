@@ -15,10 +15,10 @@
         
         // Create a dancer in the middle of the page:
         for (var i = 0; i <= 10; i++) {
-            new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) );
+            new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) ).generateRandom().startDance();
         };
 
-        
+        new Dancer().generateRandom().startDance();
         
 
         paper.view.draw();
@@ -33,7 +33,7 @@
     });
 </script>
 </head>
-<body style="background: black url(img/bg.jpg) repeat;">
+<body style="background: black url(img/bg.jpg) repeat -20px -10px; margin: 0; padding:0px;">
 
     <canvas id="myCanvas" resize></canvas>
     <script>document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')</script>
