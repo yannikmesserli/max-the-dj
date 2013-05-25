@@ -158,11 +158,17 @@ var Loop = function(_animations){
 }
 
 
+var AllMovements = {};
+
+
 var Movement = function(_min, _max, callback){
 	// List of animations registered:
-	var interface = new Item();
+	var interface = {};
 	interface._draw = function(){};
 
+    // Unique index for this Movement:
+    var index_movement = "MOV" + (new Date().getTime());
+    
 
 	var max = _max || 1.0;
 	var min = _min || 0.0;
@@ -179,51 +185,65 @@ var Movement = function(_min, _max, callback){
 
 	// find the time when we fire this function:
     var startingTime = -1;
-    
+    // We update the view each:
+    var overTo = 2;
 
     // Animate it:
     // Intern class
     var Animation = function(duration, _from, to){
             
-    interface.isRunning = true;
-    // Stupid var to catch the time:
-	var isNotSet = true;
-            // reset
-            startingTime = -1;
-            // Percent done for this Animation:
-            var percDone = 0.0;
-            // Test direction
-            var goPositive = (to - _from > 0.0);
-            // Start from the value _from or from currentPos if already partially done:
-            var from =  goPositive? Math.max(interface.currentPos, _from): Math.min(interface.currentPos, _from);
+        interface.isRunning = true;
+        // reset
+        var startingTime = -1;
+        // Percent done for this Animation:
+        var percDone = 0.0;
+        // Test direction
+        var goPositive = (to - _from > 0.0);
+        // Start from the value _from or from currentPos if already partially done:
+        var from =  goPositive? Math.max(interface.currentPos, _from): Math.min(interface.currentPos, _from);
+        // Counter of tick:
+        var count = 0;
+        // Do it when:
+        var updateWhen = Math.floor(Math.random() * overTo );
+        
            
     	// Return the function to execute:
     	return function(evt){
+
+            
+
     		if(percDone < 1.0){
-            		// Catch the time:
-            		if(isNotSet) {
-            			startingTime = evt.time;
-            			isNotSet = false;
-            		}
+            	// Catch the time:
+            	if(startingTime < 0.0) {
+            		startingTime = evt.time;
+            		isNotSet = false;
+            	}
 
-            		// Where we stand at, in percent?
-                            percDone =  (evt.time - startingTime)/duration * 1000;
+                // Increase the number of tick:
+                count++;
+
+            	// Where we stand at, in percent?
+                percDone =  (evt.time - startingTime) * duration / 1000;
+            	
+                // Handle movement at the end:
+            	if(percDone > 1.0 ) {
+                    // console.log(to);
+                    percDone = 1.0;
+                    interface.stop('terminate');
+            	}
+
+                // Update the position of the movement:
+                interface.currentPos = percDone * to  + (1 - percDone) * from;
+
+    	    	// Call the worker, do the real stuff:
+                if( count % overTo == updateWhen ){ // attempt to make it faster  
+    	    	    callback( min + max * interface.currentPos );
+                }
+                // Tick
+                interface.emit('tick', percDone, interface.currentPos);
+            }
+    	    
             		
-                            // Handle movement at the end:
-            		if(percDone > 1.0 ) {
-                                    // console.log(to);
-                                    percDone = 1.0;
-                                    interface.stop('terminate');
-            		}
-
-                            // Update the position of the movement:
-                            interface.currentPos = percDone * to  + (1 - percDone) * from;
-    	        	// Call the worker, do the real stuff:
-    	        	callback( min + max * interface.currentPos );
-                            // Tick
-                            interface.emit('tick', percDone, interface.currentPos);
-                    }
-    	        			
     	}
     }
 
@@ -267,24 +287,26 @@ var Movement = function(_min, _max, callback){
         // Emit event starting:
         interface.emit('start', interface.currentPos);
 
-    	interface.onFrame = new Animation(duration, from, to);
+    	AllMovements[index_movement] = new Animation(duration, from, to) ;
 
            
 
-            // For chaining purpose
-            return interface;
+        // For chaining purpose
+        return interface;
     }
 
 
     interface.stop = function(stop_reason, to){
 
+        //interface.onFrame = null; // Weird bug, if I set up it to null, animation got not reassigned
+        delete AllMovements[index_movement];
+        
     	interface.isRunning = false;
-            interface.emit('stop');
-            interface.emit(stop_reason);
-            //interface.onFrame = null; // Weird bug, if I set up it to null, animation got not reassigned
-    	interface.onFrame = function(){};
-            // For chaining purpose
-            return interface;
+        interface.emit('stop');
+        interface.emit(stop_reason);
+        
+        // For chaining purpose
+        return interface;
     }
 
 

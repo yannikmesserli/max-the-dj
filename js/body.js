@@ -2,6 +2,33 @@
 
 
 
+/*
+    Create a gaussian law to pick some cool random number:
+ */
+Math.nrand = function() {
+    var x1, x2, rad;
+ 
+    do {
+        x1 = 2 * this.random() - 1;
+        x2 = 2 * this.random() - 1;
+        rad = x1 * x1 + x2 * x2;
+    } while(rad >= 1 || rad == 0);
+ 
+    var c = this.sqrt(-2 * Math.log(rad) / rad);
+ 
+    return x1 * c;
+};
+
+
+var clip = function(val, _from, _to){
+    var from = _from || 0.0;
+    var to = _to || 1.0;
+
+    return Math.max(from, Math.min(to, val));
+}
+
+
+
 
 /*
     Be careful, when you assign multiple variables with ','
@@ -50,7 +77,23 @@ with (paper){
         var init = function(){
             
             // [TODO] change
-            colors = RandomColor();
+            colors = {
+                short: ['#3D4665', 'black'],
+                arm_right: {
+                    front: 'black',
+                    back: 'black'
+                },
+                arm_left: {
+                    front: 'black',
+                    back: 'black'
+                },
+                flesh: '#d3d8e1'
+            };
+
+            // Just draw a body first:
+            body = Body();
+            head = Head();
+
             constructPart();
             
             
@@ -68,9 +111,17 @@ with (paper){
    
         // generate a completely random dancer:
         __dancer__.generateRandom = function(){
+            // Random color:
+            colors  = RandomColor();
 
+            // type amr:
             type_arm = typesArm[ Math.round(Math.random()*3 - 0.2) ];
+            
+            // Construct everything:
             constructPart();
+
+            // Body:
+            body.setRandom();
 
             /////////////////////
             // LOOP FOR THE ARM:
@@ -82,10 +133,7 @@ with (paper){
                 dances.loopRightElbow = dances.loopLeftElbow.replicateFor(right_arm.foldElbow);  // Do same symmetric to the right:
             else
                 dances.loopRightElbow = randomAnim(right_arm.foldElbow); // Or generate random animation
-        
-        
-           
-
+    
 
            // Setup a new loop for the roation of the arm:
             dances.loopLeftArm = randomAnim( left_arm.rotate);
@@ -103,6 +151,9 @@ with (paper){
         }
 
         
+        __dancer__.__defineGetter__('z', function(){
+            return base.y;
+        });
 
 
         __dancer__.startDance = function(){
@@ -137,10 +188,7 @@ with (paper){
 
             __dancer__.removeChildren();
 
-            // Just draw a body first:
-            body = Body();
-            head = Head();
-
+            
             left_arm = new Arm();
             var rightset = {
                  anchor: new Point(-110, 0),
@@ -181,7 +229,7 @@ with (paper){
                     front: 'black',
                     back: 'black'
                 },
-                flesh: '#FFF0B3'
+                flesh: '#d3d8e1'
             }
 
             var colors2 = {
@@ -194,7 +242,7 @@ with (paper){
                     front: '#314f9b',
                     back: '#314f9b'
                 },
-                flesh: '#FFF0B3'
+                flesh: '#d3d8e1'
             }
 
             var colors3 = {
@@ -207,7 +255,7 @@ with (paper){
                     front: '#2383a6',
                     back: '#2383a6'
                 },
-                flesh: '#FFF0B3'
+                flesh: '#d3d8e1'  //FFF0B3
             }
             var tmp = null;
             var p = Math.random();
@@ -472,15 +520,16 @@ with (paper){
 
 
             var default_settings = {
+                'fat': 0.5,
                 pt: [
                     new Point(0, -90),
                     new Point(70, -70),
-                    new Point(100, 40), // right middle
+                    new Point(80, 40), // right middle
                     // bottom
                     new Point(50, 220),
                     new Point(-50, 220),
 
-                    new Point(-100, 40), // left middle
+                    new Point(-80, 40), // left middle
                     new Point(-70, -70), // top left
                 ],
                 handle1: new Point(0, 50),
@@ -493,13 +542,15 @@ with (paper){
 
 
             // Interface:
-            var _body = new Group();
+            var __body__ = new Group();
             
             // Private variable for the overall contour:
             var contour = null;
             
             // Private function that construct the contour from the point:
-            var createContour = function(){
+            var createContour = function(_ptSet){
+
+                var ptSet = _ptSet || settings;
 
                 if(contour){
                     contour.remove();
@@ -509,7 +560,7 @@ with (paper){
                 contour.strokeColor = 'black';
                 contour.strokeWidth = 1;
 
-                $.each(settings.pt, function(i, pt){
+                $.each(ptSet.pt, function(i, pt){
                     contour.add( base.add( pt.multiply(scale) ) );
                 });
 
@@ -519,15 +570,15 @@ with (paper){
                 //contour.fullySelected = true;
                 contour.smooth();
                 
-                contour.segments[2].handleOut =  settings.handle1.multiply(scale);
-                contour.segments[5].handleIn =  settings.handle1.multiply(scale);
+                contour.segments[2].handleOut =  ptSet.handle1.multiply(scale);
+                contour.segments[5].handleIn =  ptSet.handle1.multiply(scale);
 
 
-                contour.segments[3].handleIn =  settings.handle3.multiply(scale);
-                contour.segments[4].handleIn =  settings.handle2.multiply(scale);
+                contour.segments[3].handleIn =  ptSet.handle3.multiply(scale);
+                contour.segments[4].handleIn =  ptSet.handle2.multiply(scale);
 
-                contour.segments[3].handleOut =  settings.handle3.multiply(-scale);
-                contour.segments[4].handleOut =  settings.handle2.multiply(-scale);
+                contour.segments[3].handleOut =  ptSet.handle3.multiply(-scale);
+                contour.segments[4].handleOut =  ptSet.handle2.multiply(-scale);
             }
 
             // Create a shirt with strips:
@@ -535,14 +586,14 @@ with (paper){
                 contour.fillColor = colors.short[1];
                 var mask = contour.clone();
                 mask.clipMask = true;
-                _body.addChild(mask);
+                __body__.addChild(mask);
 
                 for (var i = 0; i < 12; i++) {
                     var start = base.subtract(settings.pt[0].add(new Point(150, -50*(i -4) - 3 )  ).multiply(scale));
                     var size = new Size(300*scale, 25*scale);
                     var r = new Path.Rectangle( start, size);
                     r.fillColor = colors.short[0];
-                    _body.addChild(r);
+                    __body__.addChild(r);
                 };
 
 
@@ -552,19 +603,42 @@ with (paper){
             var makePlain = function(){
                 contour.fillColor = colors.short[0];
             }
+
+            // Function that make the body fater of thiner
+            var setFatness = function(to){
+                // 0 < to < 1
+                
+                settings.pt[2] = settings.pt[2].add( (new Point(50, 0)).multiply(to) );
+                settings.pt[5] = settings.pt[5].add( (new Point(-50, 0)).multiply(to) );
+            }
+
             
             var init = function(){
                 
+                
+                setFatness(settings.fat);
                 createContour();
-                _body.addChild(contour);
+                __body__.addChild(contour);
+                // Default: plain
+                makePlain();
 
-                // [TODO] change
+                return __body__
+            }
+
+            __body__.setRandom = function(){
+
+                __body__.removeChildren();
+                
+                setFatness(clip(Math.pow(Math.nrand(), 2)));
+
+                createContour();
+
+                __body__.addChild(contour);
+
                 if(Math.random() > 0.5 )
                     makeBarriole();
                 else
                     makePlain();
-
-                return _body
             }
 
 

@@ -13,19 +13,42 @@
     Zepto(function($) {
         paper.setup('myCanvas');
         
+        var dancers = [];
         // Create a dancer in the middle of the page:
-        for (var i = 0; i <= 10; i++) {
-            new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) ).generateRandom().startDance();
+        for (var i = 0; i <= 50; i++) {
+            dancers.push(new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) ).generateRandom().startDance());
         };
+        
+        dancers.push(new Dancer().generateRandom().startDance());
+        // Sort it:
+        dancers.sort(function(a, b){
+            
+            return a.z - b.z;
+        });
 
-        new Dancer().generateRandom().startDance();
         
 
-        paper.view.draw();
+        var dancers_group = new Group();
 
-        var firstPoint = new Point(10, 20);
-		var secondPoint = new Point(5, 5);
+        for (var i =  0; i < dancers.length; i++) {
+            dancers_group.addChild(dancers[i]);
+            //dancers[i].bringToFront();
+        };
 
+        //console.log(dancers_group.exportSVG());
+        var startingTime = -1;
+        
+
+        dancers_group.onFrame = function(evt){
+            if(startingTime < 0.0) {
+                startingTime = evt.time;
+                isNotSet = false;
+            }
+            if(evt.time - startingTime < 1.0) console.log(evt.time - startingTime);
+            $.each(AllMovements, function(i, a){
+                a(evt);
+            });
+        }
 
 		
 		// draw the stuff (if not, it is drawn when mouse is mouved)
