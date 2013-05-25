@@ -158,12 +158,10 @@ var Loop = function(_animations){
 }
 
 
-var AllMovements = {};
-
 
 var Movement = function(_min, _max, callback){
 	// List of animations registered:
-	var interface = {};
+	var interface = new Item();
 	interface._draw = function(){};
 
     // Unique index for this Movement:
@@ -186,7 +184,7 @@ var Movement = function(_min, _max, callback){
 	// find the time when we fire this function:
     var startingTime = -1;
     // We update the view each:
-    var overTo = 2;
+    var overTo = 4;
 
     // Animate it:
     // Intern class
@@ -223,7 +221,7 @@ var Movement = function(_min, _max, callback){
                 count++;
 
             	// Where we stand at, in percent?
-                percDone =  (evt.time - startingTime) * duration / 1000;
+                percDone =  (evt.time - startingTime) / duration * 1000;
             	
                 // Handle movement at the end:
             	if(percDone > 1.0 ) {
@@ -287,7 +285,7 @@ var Movement = function(_min, _max, callback){
         // Emit event starting:
         interface.emit('start', interface.currentPos);
 
-    	AllMovements[index_movement] = new Animation(duration, from, to) ;
+    	interface.onFrame = new Animation(duration, from, to) ;
 
            
 
@@ -299,8 +297,8 @@ var Movement = function(_min, _max, callback){
     interface.stop = function(stop_reason, to){
 
         //interface.onFrame = null; // Weird bug, if I set up it to null, animation got not reassigned
-        delete AllMovements[index_movement];
-        
+        interface.onFrame = function(){};
+
     	interface.isRunning = false;
         interface.emit('stop');
         interface.emit(stop_reason);

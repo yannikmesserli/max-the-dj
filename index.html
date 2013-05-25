@@ -15,7 +15,7 @@
         
         var dancers = [];
         // Create a dancer in the middle of the page:
-        for (var i = 0; i <= 50; i++) {
+        for (var i = 0; i <= 2; i++) {
             dancers.push(new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) ).generateRandom().startDance());
         };
         
@@ -36,19 +36,6 @@
         };
 
         //console.log(dancers_group.exportSVG());
-        var startingTime = -1;
-        
-
-        dancers_group.onFrame = function(evt){
-            if(startingTime < 0.0) {
-                startingTime = evt.time;
-                isNotSet = false;
-            }
-            if(evt.time - startingTime < 1.0) console.log(evt.time - startingTime);
-            $.each(AllMovements, function(i, a){
-                a(evt);
-            });
-        }
 
 		
 		// draw the stuff (if not, it is drawn when mouse is mouved)
