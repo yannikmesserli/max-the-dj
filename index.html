@@ -15,11 +15,12 @@
         
         var dancers = [];
         // Create a dancer in the middle of the page:
-        for (var i = 0; i <= 2; i++) {
+        for (var i = 0; i <= 0; i++) {
             dancers.push(new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) ).generateRandom().startDance());
         };
         
-        dancers.push(new Dancer().generateRandom().startDance());
+        var test = new Dancer().startDance();
+        dancers.push(test);
         // Sort it:
         dancers.sort(function(a, b){
             
@@ -36,7 +37,7 @@
         };
 
         //console.log(dancers_group.exportSVG());
-
+        //$('#ok').html(test.exportSVG());
 		
 		// draw the stuff (if not, it is drawn when mouse is mouved)
 		paper.view.draw();
@@ -47,5 +48,47 @@
 
     <canvas id="myCanvas" resize></canvas>
     <script>document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')</script>
+
+    <!-- <svg id="ok"></svg> -->
+
+
+    <!-- Generator: Adobe Illustrator of some hairs  -->
+    <svg style="display:none;" version="1.1" id="cheveux1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+         width="595.28px" height="841.89px" xml:space="preserve">
+        <path d="M-0.812,1.892c-1.389-1.345-2.096-4.431-1.375-6.25"/>
+        <path d="M2.438,2.017c-0.056-2.394-0.487-4.26,0.125-6.625"/>
+        <path d="M6.063,2.142C5.709-0.019,5.272-2.479,6.188-4.483"/>
+        <path d="M0.813,0.642c0-1,0-2,0-3"/>
+        <path d="M4.063-0.483c-0.349-0.712-0.369-1.392-0.375-2.25"/>
+        <path d="M7.063,0.392C7.07-0.6,6.988-1.506,7.688-2.233"/>
+        <path d="M-3.312,4.767c-2.217-0.993-4.429-4.94-4.375-7.375"/>
+        <path d="M-2.687,2.142c-1.854-0.422-3.048-3.187-2.75-5"/>
+        <path d="M1.141,3.55c-1.349-2.537-1.935-5.405-2.232-8.316"/>
+    </svg>
+
+    <svg style="display:none;" version="1.1" id="cheveux2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+         width="595.28px" height="841.89px" xml:space="preserve">
+        <path fill="#010101" d="M-13.583,5.949c0,0,0.878-0.129,1.881-2.381c1.498-3.364,3.219-10.915,7.953-8.571
+        c6.192,3.065,2.5,5.921,2.5,5.921s-1.154,0.054-3.963,1.791C-5.483,2.877-6,4.116-6,4.116s-0.552-0.615-0.812-0.474
+        C-7.268,3.893-7.726,4.127-8.18,4.34C-8.485,4.482-9.25,7.283-9.25,7.283s-0.309-2.367-0.539-2.289
+        C-10.618,5.273-12.9,5.965-13.583,5.949z"/>
+        <path fill="#010101" d="M1.417-0.959c0,0-4.748-4.673-2.248-5.466s8.58-2.406,11.08,2.983s0.834,5.235,3.334,6.646
+            C13.583,3.203,4.75,1.967,1.417-0.959z"/>
+    </svg>
+
+
+    <svg style="display:none;" version="1.1" id="cheveux3" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+         width="595.28px" height="841.89px" xml:space="preserve">
+        <path d="M3-1.98C2.993-4.426,2.525-7.485,0-8.355"/>
+        <path d="M3.125,0c-0.007-2.447-0.475-5.505-3-6.375"/>
+        <path d="M3.125-4.417c-0.007-2.446-0.475-4.567-3-5.438"/>
+        <path d="M5.846-1.98c0.007-2.446,0.475-5.505,3-6.375"/>
+        <path d="M5.721,0C5.728-2.447,7.1-5.505,9.625-6.375"/>
+        <path d="M5.721-4.417c0.007-2.446,0.599-5.692,3.124-6.562"/>
+        <path d="M4.282-1.156C4.281-3.167,4.119-4.833,3.907-6.781"/>
+        <path d="M4.75-4.355c0-1.502-0.475-4.237,0.25-5.5"/>
+        <path d="M3.625-7.98C3.544-9.501,3.04-10.769,2-11.73"/>
+    </svg>
+
 </body>
 </html>

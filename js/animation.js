@@ -1,5 +1,5 @@
 'use_strict';
-
+var timeInterval = 40;
 /*
 	Class Loop that will help animate infinitely the different component.
     The constructor has a period as parameter, which will synchronise every object together.
@@ -161,11 +161,13 @@ var Loop = function(_animations){
 
 var Movement = function(_min, _max, callback){
 	// List of animations registered:
-	var interface = new Item();
-	interface._draw = function(){};
+	var interface = {};
+	
 
     // Unique index for this Movement:
-    var index_movement = "MOV" + (new Date().getTime());
+    interface.id = "MOV" + (new Date().getTime());
+    
+    // Time interval between each tick:
     
 
 	var max = _max || 1.0;
@@ -183,8 +185,6 @@ var Movement = function(_min, _max, callback){
 
 	// find the time when we fire this function:
     var startingTime = -1;
-    // We update the view each:
-    var overTo = 4;
 
     // Animate it:
     // Intern class
@@ -192,7 +192,7 @@ var Movement = function(_min, _max, callback){
             
         interface.isRunning = true;
         // reset
-        var startingTime = -1;
+        var startingTime = new Date().getTime();
         // Percent done for this Animation:
         var percDone = 0.0;
         // Test direction
@@ -201,27 +201,21 @@ var Movement = function(_min, _max, callback){
         var from =  goPositive? Math.max(interface.currentPos, _from): Math.min(interface.currentPos, _from);
         // Counter of tick:
         var count = 0;
-        // Do it when:
-        var updateWhen = Math.floor(Math.random() * overTo );
+        
         
            
     	// Return the function to execute:
-    	return function(evt){
+    	return function(){
 
             
 
     		if(percDone < 1.0){
-            	// Catch the time:
-            	if(startingTime < 0.0) {
-            		startingTime = evt.time;
-            		isNotSet = false;
-            	}
 
                 // Increase the number of tick:
                 count++;
 
             	// Where we stand at, in percent?
-                percDone =  (evt.time - startingTime) / duration * 1000;
+                percDone =  (new Date().getTime() - startingTime) / duration;
             	
                 // Handle movement at the end:
             	if(percDone > 1.0 ) {
@@ -234,9 +228,10 @@ var Movement = function(_min, _max, callback){
                 interface.currentPos = percDone * to  + (1 - percDone) * from;
 
     	    	// Call the worker, do the real stuff:
-                if( count % overTo == updateWhen ){ // attempt to make it faster  
-    	    	    callback( min + max * interface.currentPos );
-                }
+                
+    	    	callback( min + max * interface.currentPos );
+                
+                
                 // Tick
                 interface.emit('tick', percDone, interface.currentPos);
             }
@@ -285,19 +280,27 @@ var Movement = function(_min, _max, callback){
         // Emit event starting:
         interface.emit('start', interface.currentPos);
 
-    	interface.onFrame = new Animation(duration, from, to) ;
 
+    	setTimeout( recursive(new Animation(duration, from, to)), 1);
            
 
         // For chaining purpose
         return interface;
     }
 
+    var recursive = function(ft){
+        ft();
+        // console.log(interface.id)
+        if(interface.isRunning){
+            setTimeout(function(){ recursive(ft); }, timeInterval);
+        }
+    }
+
 
     interface.stop = function(stop_reason, to){
 
         //interface.onFrame = null; // Weird bug, if I set up it to null, animation got not reassigned
-        interface.onFrame = function(){};
+        
 
     	interface.isRunning = false;
         interface.emit('stop');
@@ -338,3 +341,9 @@ var Movement = function(_min, _max, callback){
 	return interface;
 
 }
+var rec = function(){
+    paper.view.draw();
+    setTimeout(rec, timeInterval);
+}
+
+setTimeout(rec, 100);

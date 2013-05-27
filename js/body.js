@@ -123,6 +123,10 @@ with (paper){
             // Body:
             body.setRandom();
 
+
+            // Head
+            head.setRandom();
+
             /////////////////////
             // LOOP FOR THE ARM:
             // Setup a new loop:
@@ -358,7 +362,6 @@ with (paper){
                 vect2.angle = alpha + settings.foldElbow.modifVal(beta);
                 pt.end =  vect2.add(pt.elbow); 
                 _arm.emit('changed');
-
             }).on('terminate', function(){
                 //console.log(__id__ + ' is terminate');
             });
@@ -433,7 +436,7 @@ with (paper){
             var arm_front = function(){
                 
 
-                var hand = function(pos){
+                var hand = function(pos, angle){
                     
                     var handy = new Path(); handy.pathData = "M7.163,7.416c-3.267,3.988-9.146,4.573-13.135,1.307c-2.393-1.96-3.561-4.86-3.405-7.729c0.025-0.478,0.083-0.959,0.127-1.477c0.566-3.788-1.401-9.278,2.187-8.923c0.353-0.035,0.718-0.039,1.097-0.016c0.381,0.02,0.774,0.066,1.189,0.127c2.429-1.302,4.407-1.732,6.067-1.465c0.416,0.066,0.816,0.171,1.236,0.27c8.705-0.736,6.591,6.58,6.741,12.496c-0.028,0.481-0.092,0.96-0.191,1.433C8.777,4.854,8.144,6.221,7.163,7.416z";
                     handy.set({
@@ -444,7 +447,7 @@ with (paper){
                     handy.closed = true; //handy.selected = true;
                     handy.scale(scale * 2.5);
                     handy.position = pos;
-
+                    handy.rotate(angle, pos)
 
                     return handy;
                 }
@@ -465,7 +468,7 @@ with (paper){
                     armi.closed = true;
 
 
-                    return [armi, hand(end) ];
+                    return [armi, hand(end, vect.angle + 90) ];
 
                 }
 
@@ -535,7 +538,8 @@ with (paper){
                 handle1: new Point(0, 50),
                 handle2: new Point(40, 10),
                 handle3: new Point(40, -10),
-                ptStartGrid: new Point(150, 90)
+                ptStartGrid: new Point(150, 90),
+                type: 'plain'
             };
 
             var settings = $.extend({}, default_settings, options || {}) ;
@@ -583,7 +587,9 @@ with (paper){
 
             // Create a shirt with strips:
             var makeBarriole = function(){
-                contour.fillColor = colors.short[1];
+                var bg = contour.clone();
+                bg.fillColor = colors.short[1];
+                __body__.addChild(bg);
                 var mask = contour.clone();
                 mask.clipMask = true;
                 __body__.addChild(mask);
@@ -604,6 +610,66 @@ with (paper){
                 contour.fillColor = colors.short[0];
             }
 
+            // Create a squarred pattern:
+            var makeSquared = function(){
+
+                var bg = contour.clone(); 
+                bg.fillColor = colors.short[1];
+                __body__.addChild(bg);
+                var mask = contour.clone();
+                mask.clipMask = true;
+                __body__.addChild(mask);
+
+                for (var i = 8; i < 30; i++) {
+                    for (var j = -5; j < 5; j++) {
+
+                        var size = new Size(30*scale, 30*scale);
+
+                        var start = base.add(settings.pt[0].add(new Point( size.width*j + size.width*( (j + i)%2), size.height*i)  ));
+                        
+                        var r = new Path.Rectangle( start, size);
+                        
+                        r.fillColor = colors.short[0];
+                        __body__.addChild(r);
+                    }
+                    
+                };
+            }
+
+            // Create a dual color body:
+            var makeDual = function(angle){
+                var bg = contour.clone(); 
+                bg.fillColor = colors.short[1];
+                __body__.addChild(bg);
+                var mask = contour.clone();
+                mask.clipMask = true;
+                __body__.addChild(mask);
+
+                var size = new Size(500*scale, 200*scale);
+                var r = new Path.Rectangle( base.subtract(new Point(250*scale, 150*scale)), size).rotate(angle);
+                r.fillColor = colors.short[0];
+                __body__.addChild(r);
+            }
+
+            // Create diagonal line:
+            var makeDiag = function(){
+                var bg = contour.clone();
+                bg.fillColor = colors.short[1];
+                __body__.addChild(bg);
+                var mask = contour.clone();
+                mask.clipMask = true;
+                __body__.addChild(mask);
+
+                for (var i = 0; i < 11; i++) {
+                    var start = base.subtract(settings.pt[0].add(new Point(250, -60*(i -4) - 3 )  ).multiply(scale));
+                    var size = new Size(500*scale, 20*scale);
+                    var r = new Path.Rectangle( start, size).rotate(45);
+                    r.fillColor = colors.short[0];
+                    __body__.addChild(r);
+                };
+
+            }
+
             // Function that make the body fater of thiner
             var setFatness = function(to){
                 // 0 < to < 1
@@ -612,6 +678,19 @@ with (paper){
                 settings.pt[5] = settings.pt[5].add( (new Point(-50, 0)).multiply(to) );
             }
 
+            var make = function(){
+                // console.log(settings.type)
+                switch(settings.type){
+                    case 'plain': makePlain(); break;
+                    case 'square': makeSquared(); break;
+                    case 'line': makeBarriole(); break;
+                    case 'diag': makeDiag(); break;
+                    case 'dual': makeDual(0); break;
+                    case 'dual_45': makeDual(45); break;
+                    case 'dual_45_bis': makeDual(-45); break;
+                }
+                contour.bringToFront();
+            }
             
             var init = function(){
                 
@@ -619,8 +698,10 @@ with (paper){
                 setFatness(settings.fat);
                 createContour();
                 __body__.addChild(contour);
+                
                 // Default: plain
-                makePlain();
+                make();
+                
 
                 return __body__
             }
@@ -635,42 +716,130 @@ with (paper){
 
                 __body__.addChild(contour);
 
-                if(Math.random() > 0.5 )
-                    makeBarriole();
-                else
-                    makePlain();
+                settings.type = selectRandom([ 'plain', 'square', 'line', 'diag', 'dual', 'dual_45', 'dual_45_bis' ]) ;
+                make();
+                
             }
 
 
             return init();
         }
 
+
+        // Parse the hairs:
+        var hairsSVG = parseSVG(['cheveux1', 'cheveux2', 'cheveux3'] );
+
         //////////////////////////////////////////////
         // 
         //  Head: class to create an head 
         //  
-        // 
+        //
+        
         
         var Head = function(options){
             
-            var _head = new Group();
+            var __head__ = new Group();
+            
 
             var default_settings = {
-                anchor: new Point(0, -70)
+                anchor: new Point(0, -70),
+                hair: 'coince'
             };
 
             var settings = $.extend({}, default_settings, options || {}) ;
 
-            var _head = new Group();
+            var head_center = base.add(settings.anchor.multiply(scale));
+
+            var __head__ = new Group();
+
+
+            
+            var contour = null;
+
+
+            var makeHair = function(){
+                // console.log(settings.type)
+                switch(settings.hair){
+                    case 'normal': makeNormal(); break;
+                    case 'coince': makeCoince(); break;
+                    case 'punk': makePunk(); break;
+                }
+                
+            }
+
+            // Make normal hair:
+            
+            var makeNormal = function(){
+
+                 var cheveux = hairsSVG[0].clone();
+                cheveux.translate(head_center.subtract(new Point(10*scale, 60*scale))).scale(6.5).scale(scale);
+                cheveux.style= {
+                    strokeColor: 'black',
+                    strokeWidth: 1.5
+                };
+
+                __head__.addChild(cheveux);
+                cheveux.bringToFront();
+            }
+
+             var makeCoince = function(){
+
+                 var cheveux = hairsSVG[1].clone();
+                cheveux.translate(head_center.subtract(new Point(0*scale, 45*scale))).scale(6).scale(scale);
+                cheveux.style= {
+                    fillColor: 'black'
+                    
+                };
+
+                __head__.addChild(cheveux);
+                cheveux.bringToFront();
+            }
+
+
+             var makePunk = function(){
+
+                var cheveux = hairsSVG[2].clone();
+                cheveux.translate(head_center.subtract(new Point(25*scale, 40*scale))).scale(6.5).scale(scale);
+                cheveux.style= {
+                    strokeColor: colors.short[0],
+                    strokeWidth: 1.5
+                };
+
+                
+                __head__.addChild(cheveux);
+
+            }
+
+
+            var init = function(){
+                contour = new Path.Circle( head_center, 65*scale);
+                contour.strokeColor = 'black';
+                contour.fillColor = colors.flesh;
+
+                __head__.addChild(contour);
+
+                makeHair();
+
+                return __head__;
+            }
+
+            __head__.setRandom = function(){
+
+                __head__.removeChildren();
+                __head__.addChild(contour);
+
+                settings.hair = selectRandom(['normal', 'coince', 'punk'])
+               makeHair();
+
+                return __head__;
+            }
             
 
-            var contour = new Path.Circle( base.add(settings.anchor.multiply(scale)) , 65*scale);
-            contour.strokeColor = 'black';
-            contour.fillColor = colors.flesh;
 
-            _head.addChildren([contour]);
 
-            return _head;
+           
+
+            return init();
         }
 
         // 
@@ -691,6 +860,19 @@ with (paper){
             // Convert radians to degrees:
             angle: radians * 180 / Math.PI,
             length: length
+        });
+    }
+
+    function selectRandom(array){
+        var n = array.length;
+        
+        return array[ Math.floor(Math.random() * n ) ];
+    }
+
+    function parseSVG(array){
+        return array.map(function(id){
+
+            return project.importSVG($('#'+id)[0]);
         });
     }
 }
