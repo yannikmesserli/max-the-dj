@@ -79,7 +79,7 @@ with (paper){
             // [TODO] change
             colors = {
                 short: ['#3D4665', 'black'],
-                arm_right: {
+                arm_rightarm_right: {
                     front: 'black',
                     back: 'black'
                 },
@@ -117,8 +117,11 @@ with (paper){
             // type amr:
             type_arm = typesArm[ Math.round(Math.random()*3 - 0.2) ];
             
-            // Construct everything:
+            // Construct arm:
             constructPart();
+            // Make them of random color:
+            left_arm.makeRandom();
+            right_arm.makeRandom(left_arm.typeColor);
 
             // Body:
             body.setRandom();
@@ -223,56 +226,59 @@ with (paper){
 
             // Ugly right now
             // [TODO]
-            var colors1 = {
-                short: ['#3D4665', 'black'],
-                arm_right: {
-                    front: 'black',
-                    back: 'black'
-                },
-                arm_left: {
-                    front: 'black',
-                    back: 'black'
-                },
+            var colors_tmp = [];
+            colors_tmp.push({
+                short: ['#3D4665', '#548395'],
                 flesh: '#d3d8e1'
-            }
+            });
 
-            var colors2 = {
-                short: ['#314f9b', '#a62323'],
-                arm_right: {
-                    front: '#314f9b',
-                    back: '#314f9b'
-                },
-                arm_left: {
-                    front: '#314f9b',
-                    back: '#314f9b'
-                },
+            colors_tmp.push({
+                short: ['#314f9b', '#954949'],
                 flesh: '#d3d8e1'
-            }
+            });
 
-            var colors3 = {
+            colors_tmp.push({
                 short: ['#2383a6', '#46498b'],
-                arm_right: {
-                    front: '#2383a6',
-                    back: '#2383a6'
-                },
-                arm_left: {
-                    front: '#2383a6',
-                    back: '#2383a6'
-                },
                 flesh: '#d3d8e1'  //FFF0B3
-            }
-            var tmp = null;
-            var p = Math.random();
-            if(p < 0.33){
-                tmp = colors1;
-            }else if( p < 0.66){
-                tmp = colors2;
-            }else{
-                tmp = colors3;
-            }
+            });
 
 
-            return tmp;
+            colors_tmp.push({
+                short: ['#548395', '#548395'],
+                flesh: '#d3d8e1'
+            })
+
+            colors_tmp.push({
+                short: ['#45498b', '#548395'],
+                flesh: '#a5967b'
+            });
+
+            colors_tmp.push({
+                short: ['#45584a', '#a5967b'],
+                flesh: '#c8beb1'
+            });
+
+            colors_tmp.push({
+                short: ['#599563', '#9f9588'],
+                flesh: '#a9b363'
+            });
+
+            colors_tmp.push({
+                short: ['#304e9b;', '#45498b'],
+                flesh: '#d3d8e1'
+            });
+
+
+            colors_tmp.push({
+                short: ['#588dbb', '#aca054'],
+                flesh: '#c7bdb1'
+            });
+
+
+           
+
+
+            return selectRandom(colors_tmp);
 
         }
 
@@ -307,6 +313,11 @@ with (paper){
             // Our arm object:
             var _arm = new Group();
 
+            // For coloration: default plain:
+            _arm.typeColor = 'tshirt'; var arm_color = [];
+
+            // The arm is decomposed into two parts:
+            var myfront = null, myback = null;
 
             // Add event handler:
             smokesignals.convert(_arm);
@@ -368,10 +379,14 @@ with (paper){
             
             var init = function(){
                 construct_point();
-       
-                var myfront = new arm_front();
-                var myback = new arm_back();
                 
+                colorArm();
+
+                myfront = new arm_front();
+                myback = new arm_back();
+                
+                
+
                 _arm.addChildren([myfront, myback ]);
 
                 return _arm;
@@ -413,7 +428,7 @@ with (paper){
                     // Register event:
                     _arm.on('changed', function(){
                         part_arm.updateView();
-                    })
+                    });
 
                     return part_arm;
                 }
@@ -463,7 +478,7 @@ with (paper){
                     armi.style = {
                         strokeColor: 'black',
                         strokeWidth: 0.5,
-                        fillColor: colors[settings.type].front
+                        fillColor: arm_color[0]
                     };
                     armi.closed = true;
 
@@ -490,7 +505,7 @@ with (paper){
                     armi.style = {
                         strokeColor: 'black',
                         strokeWidth: 0.5,
-                        fillColor: colors[settings.type].front
+                        fillColor: arm_color[1]
                     };
                     armi.closed = true;
 
@@ -504,6 +519,48 @@ with (paper){
 
                 return tmp;
             }
+
+
+            // Wheither the type is, return a different color:
+            var colorArm = function(){
+               
+                
+                switch(_arm.typeColor){
+                    case 'plain': arm_color = [colors.short[0], colors.short[0]]; break;
+                    case 'plain2': arm_color = [colors.short[1], colors.short[1]]; break;
+                    case 'alt': arm_color = [colors.short[0], colors.short[1]]; break;
+                    case 'tshirt': arm_color = [colors.flesh, colors.short[0]]; break;
+                    case 'tshirt2': arm_color = [colors.flesh, colors.short[1]]; break;
+                    case 'naked': arm_color = [colors.flesh, colors.flesh]; break;
+                    case 'opp': 
+                        if(settings.type == 'arm_right') arm_color = [colors.short[0], colors.short[0]];
+                        else arm_color = [colors.short[1], colors.short[1]]; 
+                        break;
+                    case 'diag': 
+                        if(settings.type == 'arm_right') arm_color = [colors.short[0], colors.short[1]];
+                        else arm_color = [colors.short[1], colors.short[0]]; 
+                        break;
+                    case 'weird': 
+                        if(settings.type == 'arm_right') arm_color = [colors.flesh, colors.short[1]];
+                        else arm_color = [colors.short[0], colors.short[0]]; 
+                        break;
+                     case 'weird2': 
+                        if(settings.type == 'arm_right') arm_color = [colors.flesh, colors.short[1]];
+                        else arm_color = [colors.short[1], colors.short[1]]; 
+                        break;
+                }
+            }
+
+            _arm.makeRandom = function(type){
+                if(type == null)
+                    _arm.typeColor = selectRandom(['plain', 'plain2', 'alt', 'tshirt', 'tshirt2', 'naked', 'opp', 'diag', 'weird', 'weird2']);
+                else
+                    _arm.typeColor = type;
+
+                colorArm();
+            };
+
+            
 
             
             // Interface:
@@ -830,6 +887,8 @@ with (paper){
 
                 settings.hair = selectRandom(['normal', 'coince', 'punk'])
                makeHair();
+
+               contour.fillColor = colors.flesh;
 
                 return __head__;
             }
