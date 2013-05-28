@@ -1,5 +1,5 @@
 'use_strict';
-var timeInterval = 40;
+var timeInterval = 50;
 /*
 	Class Loop that will help animate infinitely the different component.
     The constructor has a period as parameter, which will synchronise every object together.
@@ -102,7 +102,7 @@ var Loop = function(_animations){
             // Compute the duration if needed:
             var last = anim.duration? anim.duration * period:  period / animations.length;
             // Start _loop current animation
-            anim.Movement.start(anim.end, last  );
+            anim.Movement.start(anim.init, anim.end, last  );
         }
 
         prepareNext(indexAnim);
@@ -128,6 +128,7 @@ var Loop = function(_animations){
             'end': Math.random(),
             'Movement': mouvement
         });
+        return _loop;
     }
 
     _loop.replicateFor = function(mov){
@@ -218,22 +219,23 @@ var Movement = function(_min, _max, callback){
                 percDone =  (new Date().getTime() - startingTime) / duration;
             	
                 // Handle movement at the end:
-            	if(percDone > 1.0 ) {
-                    // console.log(to);
+            	if(percDone >= 1.0 ) 
                     percDone = 1.0;
-                    interface.stop('terminate');
-            	}
+                    
 
                 // Update the position of the movement:
                 interface.currentPos = percDone * to  + (1 - percDone) * from;
 
     	    	// Call the worker, do the real stuff:
-                
     	    	callback( min + max * interface.currentPos );
                 
-                
-                // Tick
+                 // Tick
                 interface.emit('tick', percDone, interface.currentPos);
+
+                // Stop the animation:
+                if(percDone >= 1.0 )
+                    interface.stop('terminate');
+               
             }
     	    
             		
@@ -245,8 +247,8 @@ var Movement = function(_min, _max, callback){
     interface.start = function(a, b, c){
 
         //Function to test the parameters:
-        var testVar = function(a){
-                return ((a > 0.0) && (a < 1.0));
+        var testVar = function(d){
+                return ((d >= 0.0) && (d <= 1.0));
         }
 
         // 0 parameter:
@@ -267,7 +269,7 @@ var Movement = function(_min, _max, callback){
 
         // if three parameters
          if( a != null && b != null && c != null){
-                if(testVar(a)) to = a;
+                if(testVar(a)) from = a;
                 if(testVar(b)) to = b;
                 if(c > 0.0) duration = c;
         }
@@ -280,8 +282,7 @@ var Movement = function(_min, _max, callback){
         // Emit event starting:
         interface.emit('start', interface.currentPos);
 
-
-    	setTimeout( recursive(new Animation(duration, from, to)), 1);
+    	setTimeout( function(){ recursive(new Animation(duration, from, to))}, 1);
            
 
         // For chaining purpose
@@ -290,7 +291,6 @@ var Movement = function(_min, _max, callback){
 
     var recursive = function(ft){
         ft();
-        // console.log(interface.id)
         if(interface.isRunning){
             setTimeout(function(){ recursive(ft); }, timeInterval);
         }

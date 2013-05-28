@@ -37,7 +37,7 @@ var clip = function(val, _from, _to){
  */
 
 with (paper){
-    var Dancer = function(_base ){
+    var Dancer = function(_base, _scale){
 
         /*
             - base: is the point from which every other point is attached to
@@ -48,12 +48,15 @@ with (paper){
         // the interface is paperjs Group 
         var __dancer__ = new Group();
 
+        // Add some events:
+        smokesignals.convert(__dancer__);
+
         // The dance has, like every humain, some arms, a head, and a body:
         var left_arm = null, right_arm = null, body = null, head = null; 
 
         // Scale of all the body:
         // this is for comodity, so that I can work at the size I want:
-        var scale = 0.17; // 0.17
+        var scale = _scale || 0.17; // 0.17
 
         // The point from which we are constructing everything:
         var base = _base || paper.view.center;
@@ -68,6 +71,7 @@ with (paper){
 
         var type_arm = typesArm[2];
 
+        var amplitude_shake = 0.5;
 
         // For the color.... to be moved somewhere else:
         // 
@@ -78,7 +82,7 @@ with (paper){
             
             // [TODO] change
             colors = {
-                short: ['#3D4665', 'black'],
+                short: ['#3D4665', '#548395'],
                 arm_rightarm_right: {
                     front: 'black',
                     back: 'black'
@@ -95,11 +99,21 @@ with (paper){
             head = Head();
 
             constructPart();
+
+            __dancer__.on('change:base', function(){
+
+                body.emit('change');
+                head.emit('change');
+                left_arm.emit('change');
+                right_arm.emit('change');
+
+            });
             
             
             return __dancer__;
 
         }
+
 
 
         //////////////////////////////////////////////
@@ -108,6 +122,17 @@ with (paper){
         //                                          //
         //////////////////////////////////////////////
 
+        // generate DJ:
+        __dancer__.generateDJ = function(){
+
+            dances.body_shake =  new Loop().add([{ 'end': 1, 'Movement': body.shake}]);
+            dances.body_jump =  new Loop().add([{ 'end': 1, 'Movement': body.jump}]);
+            dances.head_jump =  new Loop().add([{ 'end': 1, 'Movement': head.jump}]);
+            dances.left_jump =  new Loop().add([{ 'end': 1, 'Movement': left_arm.jump}]);
+            dances.right_jump =  new Loop().add([{ 'end': 1, 'Movement': right_arm.jump}]);
+
+            return __dancer__;
+        }  
    
         // generate a completely random dancer:
         __dancer__.generateRandom = function(){
@@ -117,6 +142,9 @@ with (paper){
             // type amr:
             type_arm = typesArm[ Math.round(Math.random()*3 - 0.2) ];
             
+            // the movement of the body:
+            amplitude_shake = Math.random();
+
             // Construct arm:
             constructPart();
             // Make them of random color:
@@ -129,6 +157,14 @@ with (paper){
 
             // Head
             head.setRandom();
+
+
+            dances.body_shake =  new Loop().add([{ 'end': 1, 'Movement': body.shake}]);
+            dances.body_jump =  new Loop().add([{ 'end': 1, 'Movement': body.jump}]);
+            dances.head_jump =  new Loop().add([{ 'end': 1, 'Movement': head.jump}]);
+            dances.left_jump =  new Loop().add([{ 'end': 1, 'Movement': left_arm.jump}]);
+            dances.right_jump =  new Loop().add([{ 'end': 1, 'Movement': right_arm.jump}]);
+
 
             /////////////////////
             // LOOP FOR THE ARM:
@@ -152,6 +188,7 @@ with (paper){
                 dances.loopRightArm = randomAnim(right_arm.rotate); // generate random one
 
 
+            
 
 
            return __dancer__;
@@ -170,6 +207,16 @@ with (paper){
             return __dancer__;
         }
 
+        __dancer__.move = function(newpos){
+            var oldpos = base;
+            return new Movement(0.0, 1.0, function(val){
+                
+                base = newpos.multiply(val).add(oldpos.multiply(1.0 - val)); 
+                __dancer__.emit('change:base');
+
+            }).start();
+        }
+
         //////////////////////////////////////////////
         //                                          //
         //             PRIVATE METHODS              //
@@ -183,9 +230,11 @@ with (paper){
             var loop = new Loop();
             loop.addRandom(movement);
             var prob = 0.3;
-            while( Math.random() < prob ){
+            var count = 1;
+            while( Math.random() < prob && count < 4){
                 loop.addRandom(movement);
                 prob = prob/2;
+                count++;
             }
             return loop;
         }
@@ -356,7 +405,8 @@ with (paper){
                 vect.angle = settings.rotate.modifVal(val);
                 pt.elbow = vect.add(pt.begin);
                 pt.end =  vect2.add(pt.elbow); 
-                _arm.emit('changed');
+                myfront.emit('change');
+                myback.emit('change');
 
             }).on('interupted', function(){
                 //console.log('interupted');
@@ -372,9 +422,24 @@ with (paper){
                 var vect2 = pt.elbow.subtract(pt.begin);
                 vect2.angle = alpha + settings.foldElbow.modifVal(beta);
                 pt.end =  vect2.add(pt.elbow); 
-                _arm.emit('changed');
+                myfront.emit('change');
+                myback.emit('change');
             }).on('terminate', function(){
                 //console.log(__id__ + ' is terminate');
+            });
+
+
+            // Jump with the body:
+             _arm.jump = new Movement( -amplitude_shake, amplitude_shake , function(val){
+                
+                pt.begin = base.subtract( settings.anchor.multiply(scale).add( (new Point(  0, -50)).multiply(scale * val ) ) ) ;
+                pt.elbow = pt.begin.add(  settings.elbow.multiply(scale));
+                pt.end = pt.elbow.add(    settings.end.multiply(scale));
+                _arm.pt = pt;
+
+                myfront.emit('change');
+                myback.emit('change');
+
             });
             
             var init = function(){
@@ -385,7 +450,11 @@ with (paper){
                 myfront = new arm_front();
                 myback = new arm_back();
                 
-                
+                _arm.on('change', function(){
+                    construct_point();
+                    myfront.emit('change');
+                    myback.emit('change');
+                });
 
                 _arm.addChildren([myfront, myback ]);
 
@@ -415,6 +484,9 @@ with (paper){
                 // The arm is actually a group:
                 var part_arm = new Group();
 
+                // Event:
+                smokesignals.convert(part_arm);
+
                 var draw = _draw || function(start, end){
                    
                     var tmp = new Path([ start, end] );
@@ -426,7 +498,7 @@ with (paper){
                     // Draw stuff:
                     part_arm.updateView();
                     // Register event:
-                    _arm.on('changed', function(){
+                    part_arm.on('change', function(){
                         part_arm.updateView();
                     });
 
@@ -601,9 +673,14 @@ with (paper){
 
             var settings = $.extend({}, default_settings, options || {}) ;
 
+            // the points to construct the body:
+            var ptSet = {};
 
             // Interface:
             var __body__ = new Group();
+
+            // Add event handler:
+            smokesignals.convert(__body__);
             
             // Private variable for the overall contour:
             var contour = null;
@@ -611,7 +688,7 @@ with (paper){
             // Private function that construct the contour from the point:
             var createContour = function(_ptSet){
 
-                var ptSet = _ptSet || settings;
+                var ptSet2 = _ptSet || ptSet;
 
                 if(contour){
                     contour.remove();
@@ -621,8 +698,8 @@ with (paper){
                 contour.strokeColor = 'black';
                 contour.strokeWidth = 1;
 
-                $.each(ptSet.pt, function(i, pt){
-                    contour.add( base.add( pt.multiply(scale) ) );
+                $.each(ptSet2.pt, function(i, pt){
+                    contour.add( base.add( pt.clone().multiply(scale) ) );
                 });
 
                 contour.closed = true;
@@ -631,15 +708,15 @@ with (paper){
                 //contour.fullySelected = true;
                 contour.smooth();
                 
-                contour.segments[2].handleOut =  ptSet.handle1.multiply(scale);
-                contour.segments[5].handleIn =  ptSet.handle1.multiply(scale);
+                contour.segments[2].handleOut =  ptSet2.handle1.clone().multiply(scale);
+                contour.segments[5].handleIn =  ptSet2.handle1 .clone().multiply(scale);
 
 
-                contour.segments[3].handleIn =  ptSet.handle3.multiply(scale);
-                contour.segments[4].handleIn =  ptSet.handle2.multiply(scale);
-
-                contour.segments[3].handleOut =  ptSet.handle3.multiply(-scale);
-                contour.segments[4].handleOut =  ptSet.handle2.multiply(-scale);
+                contour.segments[3].handleIn =  ptSet2.handle3 .clone().multiply(scale);
+                contour.segments[4].handleIn =  ptSet2.handle2 .clone().multiply(scale);
+ 
+                contour.segments[3].handleOut =  ptSet2.handle3.clone().multiply(-scale);
+                contour.segments[4].handleOut =  ptSet2.handle2.clone().multiply(-scale);
             }
 
             // Create a shirt with strips:
@@ -735,7 +812,10 @@ with (paper){
                 settings.pt[5] = settings.pt[5].add( (new Point(-50, 0)).multiply(to) );
             }
 
-            var make = function(){
+
+
+
+            var makeColor = function(){
                 // console.log(settings.type)
                 switch(settings.type){
                     case 'plain': makePlain(); break;
@@ -749,34 +829,81 @@ with (paper){
                 contour.bringToFront();
             }
             
-            var init = function(){
-                
-                
-                setFatness(settings.fat);
-                createContour();
+            var draw = function(){
+
+                __body__.removeChildren();
                 __body__.addChild(contour);
                 
                 // Default: plain
-                make();
-                
+                makeColor();
 
+            }
+
+            var init = function(){
+
+                setFatness(settings.fat);
+                ptSet = {
+                    pt: []
+                };
+                $.each(settings.pt, function(i, pt){
+                   ptSet.pt[i] = pt.clone();
+                });
+                ptSet.handle1 = settings.handle1.clone();
+                ptSet.handle2 = settings.handle2.clone();
+                ptSet.handle3 = settings.handle3.clone();
+                createContour();
+                draw();
                 return __body__
             }
 
             __body__.setRandom = function(){
 
-                __body__.removeChildren();
-                
                 setFatness(clip(Math.pow(Math.nrand(), 2)));
-
+                ptSet = {
+                    pt: []
+                };
+                $.each(settings.pt, function(i, pt){
+                   ptSet.pt[i] = pt.clone();
+                });
+                ptSet.handle1 = settings.handle1.clone();
+                ptSet.handle2 = settings.handle2.clone();
+                ptSet.handle3 = settings.handle3.clone();
                 createContour();
 
-                __body__.addChild(contour);
-
                 settings.type = selectRandom([ 'plain', 'square', 'line', 'diag', 'dual', 'dual_45', 'dual_45_bis' ]) ;
-                make();
+                draw();
                 
             }
+
+
+            // ANIMATIONS:
+            // 
+            // Shaking the body:
+            __body__.shake = new Movement( -amplitude_shake, amplitude_shake , function(val){
+                
+                ptSet.pt[2] = settings.pt[2].add( (new Point(  100, 0)).multiply(scale * val ) );
+                ptSet.pt[5] = settings.pt[5].add( (new Point( -100, 0)).multiply(scale * val ) );
+
+                
+                __body__.emit('change');
+
+            });
+
+
+            __body__.jump = new Movement( -amplitude_shake, amplitude_shake , function(val){
+                
+                ptSet.pt[1] = settings.pt[1].add( (new Point(  10, 100)).multiply(scale * val ) );
+                ptSet.pt[6] = settings.pt[6].add( (new Point( -10, 100)).multiply(scale * val ) );
+
+                
+                __body__.emit('change');
+
+            });
+
+            __body__.on('change', function(){
+                createContour();
+                draw();
+            });
 
 
             return init();
@@ -784,7 +911,7 @@ with (paper){
 
 
         // Parse the hairs:
-        var hairsSVG = parseSVG(['cheveux1', 'cheveux2', 'cheveux3'] );
+        var hairsSVG = parseSVG(['cheveux1', 'cheveux2', 'cheveux3', 'cheveux4', 'cheveux5'] );
 
         //////////////////////////////////////////////
         // 
@@ -797,18 +924,19 @@ with (paper){
             
             var __head__ = new Group();
             
+            // Events:
+            smokesignals.convert(__head__);
 
             var default_settings = {
                 anchor: new Point(0, -70),
-                hair: 'coince'
+                eyeOffset: new Point(20, 0),
+                hair: 'normal',
+                eye: 'glass'
             };
 
             var settings = $.extend({}, default_settings, options || {}) ;
 
-            var head_center = base.add(settings.anchor.multiply(scale));
-
-            var __head__ = new Group();
-
+            var head_center = null;
 
             
             var contour = null;
@@ -819,7 +947,31 @@ with (paper){
                 switch(settings.hair){
                     case 'normal': makeNormal(); break;
                     case 'coince': makeCoince(); break;
-                    case 'punk': makePunk(); break;
+                    case 'punk': makePunk(0); break;
+                    case 'punk3': makePunk(1); break;
+                    case 'punk2': makePunk2(0); break;
+                    case 'punk4': makePunk2(1); break;
+                    case 'coince2': makeCoince2(1); break;
+                }
+                
+            }
+
+            var makeEye = function(){
+                
+                var pt1 = head_center.add(settings.eyeOffset.multiply(scale));
+                var pt2 = head_center.subtract(settings.eyeOffset.multiply(scale));
+
+                switch(settings.eye){
+                    case 'normal': eyeDefault(pt1); eyeDefault(pt2); break;
+                    case 'cross': eyeCross(pt1); eyeCross(pt2); break;
+                    case 'cross2': eyeDefault(pt1); eyeCross(pt2); break;
+                    case 'cross3': eyeDefault(pt2); eyeCross(pt1); break;
+                    case 'line': eyeRight(pt1); eyeRight(pt2); break;
+                    case 'line2': eyeRight(pt1); eyeDefault(pt2); break;
+                    case 'line3': eyeRight(pt2); eyeDefault(pt1); break;
+                    case 'glass': glasses(pt1); break;
+                    case 'glass2': glasses(pt1, colors.short[0]); break;
+                    case 'glass3': glasses2(pt1, pt2); break;
                 }
                 
             }
@@ -852,13 +1004,26 @@ with (paper){
                 cheveux.bringToFront();
             }
 
+            var makeCoince2 = function(){
 
-             var makePunk = function(){
+                 var cheveux = hairsSVG[3].clone();
+                cheveux.translate(head_center.subtract(new Point(60*scale, 5*scale))).scale(6).scale(scale);
+                cheveux.style= {
+                    strokeColor: 'black',
+                    strokeWidth: 1.0
+                };
+
+                __head__.addChild(cheveux);
+                cheveux.bringToFront();
+            }
+
+
+            var makePunk = function(val){
 
                 var cheveux = hairsSVG[2].clone();
                 cheveux.translate(head_center.subtract(new Point(25*scale, 40*scale))).scale(6.5).scale(scale);
                 cheveux.style= {
-                    strokeColor: colors.short[0],
+                    strokeColor: colors.short[val],
                     strokeWidth: 1.5
                 };
 
@@ -867,8 +1032,85 @@ with (paper){
 
             }
 
+            var makePunk2 = function(val){
+
+                var cheveux = hairsSVG[4].clone();
+                cheveux.translate(head_center.subtract(new Point(5*scale, 50*scale))).scale(6.5).scale(scale);
+                cheveux.style= {
+                    strokeColor: colors.short[val],
+                    strokeWidth: 1.5
+                };
+
+                
+                __head__.addChild(cheveux);
+
+            }
+
+            var s1 = Math.random();
+            var s2 = Math.random();
+
+            // Draw an eye like a cross
+            var eyeCross = function(pt){
+                var eye1 = new Path([ 
+                    pt.add( new Point(20*s1*scale, 20*s2*scale)  ),
+                    pt.add( new Point(-20*s1*scale, -20*s2*scale)  )
+                ]);
+
+                var eye2 = new Path([ 
+                    pt.add( new Point(-20*s1*scale, 20*s2*scale)  ),
+                    pt.add( new Point(20*s1*scale, -20*s2*scale)  )
+                ]);
+                var eye = new Group([eye1, eye2]);
+                eye.style = {
+                    strokeColor: 'black',
+                    strokeWidth: 1.0
+                }
+                __head__.addChild(eye);
+            }
+
+            var eyeRight = function(pt){
+                var eye = new Path([ 
+                    pt.add( new Point(20*s1*scale, 10*(s2 - 0.5)*scale)  ),
+                    pt.add( new Point(-20*s1*scale, -10*(s2 - 0.5)*scale)  )
+                ]);
+                eye.strokeColor = 'black';
+                eye.strokeWidth = 1.0;
+                __head__.addChild(eye);
+            }
+
+            var eyeDefault = function(pt){
+
+                var eye = new Path.Circle(pt, 10*scale);
+                eye.strokeColor = 'black';
+                eye.strokeWidth = 1.0;
+                __head__.addChild(eye);
+            }
+
+             var glasses2 = function(pt1, pt2){
+
+                var g1 = new Path.Circle(pt1.subtract(new Point(2*scale, 0)), 18*scale);
+                var g2 = new Path.Circle(pt2.subtract(new Point(-2*scale, 0)), 18*scale);
+                var eye = new Group([g1, g2]);
+                eye.fillColor = 'black';
+                
+                __head__.addChild(eye);
+            }
+
+            var glasses = function(pt, _color){
+                var color = _color || 'black';
+                var glasses = new Path();
+                glasses.pathData = 'M12.494,11.931c-9.167,0-12.232-8.264-12.232-8.264s-1.434,8.099-9.039,8.099c-13.229,0-10.556-17.264-10.556-17.264H20C20-5.498,20.827,11.931,12.494,11.931z'
+                glasses.closed = true;
+                glasses.scale(2.5).scale(scale).translate(pt.subtract(new Point(22*scale,10*scale) ));
+                glasses.fillColor = color;
+                glasses.strokeColor = 'black';
+                glasses.strokeWidth = 1.0;
+                __head__.addChild(glasses);
+            }
+
 
             var init = function(){
+                head_center = base.add(settings.anchor.multiply(scale));
                 contour = new Path.Circle( head_center, 65*scale);
                 contour.strokeColor = 'black';
                 contour.fillColor = colors.flesh;
@@ -876,6 +1118,7 @@ with (paper){
                 __head__.addChild(contour);
 
                 makeHair();
+                makeEye();
 
                 return __head__;
             }
@@ -883,20 +1126,58 @@ with (paper){
             __head__.setRandom = function(){
 
                 __head__.removeChildren();
+
+                contour = new Path.Circle( head_center, 65*scale);
+                contour.segments[3].point = contour.segments[3].point.add( new Point( ((14*clip(Math.nrand())) -7.0)*scale, (50*Math.random() -20)*scale) )
+                contour.strokeColor = 'black';
+                contour.fillColor = colors.flesh;
+
                 __head__.addChild(contour);
 
-                settings.hair = selectRandom(['normal', 'coince', 'punk'])
-               makeHair();
+                settings.hair = selectRandom(['normal', 'coince', 'punk', 'punk3', 'punk2', 'punk4', 'coince2']);
+                settings.eye =  selectRandom(['normal', 'cross', 'cross2', 'cross3', 'line', 'line2', 'line3', 'glass', 'glass2', 'glass3']);
+                makeHair();
+                makeEye();
 
-               contour.fillColor = colors.flesh;
+                contour.fillColor = colors.flesh;
 
                 return __head__;
             }
             
 
+            __head__.on('change', function(){
+                head_center = base.add(settings.anchor.multiply(scale));
 
+                __head__.removeChildren();
 
-           
+                contour = new Path.Circle( head_center, 65*scale);
+                contour.strokeColor = 'black';
+                contour.fillColor = colors.flesh;
+
+                __head__.addChild(contour);
+
+                makeHair();
+                makeEye();
+            });
+
+            // Animation:
+            // 
+            __head__.jump = new Movement( -amplitude_shake, amplitude_shake , function(val){
+                
+                head_center =  base.add(settings.anchor.multiply(scale).add( (new Point(  0, 50)).multiply(scale * val ) ));
+
+                __head__.removeChildren();
+
+                contour = new Path.Circle( head_center, 65*scale);
+                contour.strokeColor = 'black';
+                contour.fillColor = colors.flesh;
+
+                __head__.addChild(contour);
+
+                makeHair();
+                makeEye();
+
+            });
 
             return init();
         }
