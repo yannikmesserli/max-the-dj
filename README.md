@@ -1,0 +1,1 @@
+Max the DJ is a little game I created with PaperJS for my course SHS at EPFL.
