@@ -118,7 +118,13 @@ var Loop = function(_animations){
         });
         // we need also to reset
         // 
+    }
+
+    
+    _loop.setRandom = function(){
+        var n = animations.length;
         
+        animations[ Math.floor(Math.random() * n ) ].Movement.set( Math.random() );
         return _loop;
     }
 
@@ -318,7 +324,7 @@ var Movement = function(_min, _max, callback){
 
     	var perc = _perc || 0.0;
     	interface.currentPos = perc;
-
+        
     	callback( min + max * interface.currentPos );
 
             // For chaining purpose

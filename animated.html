@@ -4,19 +4,6 @@
 <!-- Load the Paper.js library -->
 <link rel="stylesheet" href="css/bootstrap.min.css">
 <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
-
-<style>
-    #watch{
-        font-size: 30px;
-        color: #fff;
-        position: absolute;
-        top: 15px;
-        left: 20px;
-        font-family: Helvetica;
-    }
-</style>
-
-
 <script type="text/javascript" src="js/paper.js"></script>
 <script type="text/javascript" src="js/jquery.js"></script>
 <!-- Library to implement the event: -->
@@ -24,34 +11,22 @@
 <script type="text/javascript" src="js/animation.js"></script>
 <script type="text/javascript" src="js/body.js"></script>
 <script type="text/javascript" src="js/bootstrap.min.js"></script>
-<script type="text/javascript" src="js/timer.js"></script>
 <script type="text/javascript" language="javascript">
-
-    var NB_OF_DANCER = 130;
-    var SHOW_ANIM = false;
-
-
     paper.install(window);
     
-    var timer = new Timer();
-    
+
     var startAnim = function(){
-        timer.reset();
+
         $('<canvas id="myCanvas"></canvas>').appendTo('body').attr('resize', 'true');
         paper.setup('myCanvas');
 
-
-        var dj_pos = new Point( (view.bounds.width - 100) * Math.random() + 50, (view.bounds.height -100) * Math.random() + 50 );
+        var dj_pos = new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random());
 
         paper.tool.onMouseUp = function(event) {
             var evPt = event.middlePoint;
 
-            if(evPt.subtract(dj.base).length < 50){
-                timer.pause();
+            if(evPt.subtract(dj_pos).length < 100){
                 $('#myCanvas').remove();
-                var mm = new Date(timer.getTime());
-                $('#yourtime').html( Math.round(timer.getTime()/ 1000) );
-
                 $('#win').modal('show');
 
                 $('html').bind('keypress', function(e)
@@ -72,32 +47,22 @@
         
         var dancers = [];
         // Create a dancer in the middle of the page:
-        for (var i = 0; i <= NB_OF_DANCER; i++) {
-            var d = new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) );
-            d.generateRandom();
-            if(!SHOW_ANIM){
-                dancers.push( d.setRandomPose() ); // Tu le poses, et tu fais des poses
-            }else{
-                dancers.push( d.startDance()    ); // OUlaaa oullaaala;
-            }
+        for (var i = 0; i <= 30; i++) {
+            dancers.push(new Dancer(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()) ).generateRandom().startDance());
         };
         
 
-        // Generate the DJ
-        var dj = new Dancer(dj_pos).generateDJ();
-        if(!SHOW_ANIM){
-            dj.setRandomPose();
-        }else{
-            dj.startDance();
-        }
+        
+        var dj = new Dancer(dj_pos).generateDJ().startDance();
+
         dancers.push(dj);
-
-
-        // Sort it so that on the canvas it looks good:
+        // Sort it:
         dancers.sort(function(a, b){
             
             return a.z - b.z;
         });
+
+        
 
         var dancers_group = new Group();
 
@@ -106,87 +71,36 @@
             //dancers[i].bringToFront();
         };
 
-
-        // Move the dancers:
-        if(SHOW_ANIM){
-
-            var rec = function(dancer){
-                
-                dancer.move(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()), 5000 *  Math.random() + 500 );
-                setTimeout(function(){
-                    rec(dancer);
-                }, NB_OF_DANCER * 5000 *  Math.random() + 2000);
-            }
-
-            for (var j =  0; j < dancers_group.children.length; j++) {
-                
-                var d = dancers_group.children[j];
-                setTimeout(
-                (function(){
-                    rec(d);
-                })(d),  10000 * Math.random());
-                //dancers[i].bringToFront();
-            };
-        }
-
+        //console.log(dancers_group.exportSVG());
+        //$('#ok').html(test.exportSVG());
 		
 		// draw the stuff (if not, it is drawn when mouse is mouved)
 		paper.view.draw();
 
-        // Start the timer:
-        timer.play();
-    }
-    
-    var beginGame = function(){
-
-        $('#myModal').modal('hide');
-        startAnim();
-
+        // test.move(new Point( view.bounds.width * Math.random(), view.bounds.height * Math.random()));
     }
 
     $(document).ready(function(){
-        
-        // Setup some event:
         $('html').bind('keypress', function(e)
         {
              if(e.keyCode == 13)
              {
-                beginGame();   
+                $('#myModal').modal('hide');
+                startAnim();     
              }
         });
-
-        // Low difficulty:
-        $('#start1').click(function(){
-            NB_OF_DANCER = 10;
-            beginGame();
+        $('#start').click(function(){
+            $('#myModal').modal('hide');
+            startAnim();
         });
 
-        // Medium difficulty:
-        $('#start2').click(function(){
-            NB_OF_DANCER = 70;
-            beginGame();
-        });
-
-        // Medium difficulty:
-        $('#start3').click(function(){
-            beginGame();
-        });
-
-        // With animations:
-        $('#startAnim').click(function(){
-            SHOW_ANIM = true;
-            NB_OF_DANCER = 5;
-            beginGame();
-        });
-
-        // Show the welcome panel
         $('#myModal').modal('show');
+
         paper.setup("max");
         var test = new Dancer(new Point( view.bounds.width/2, view.bounds.height/2), 0.3).generateDJ().startDance();
         
         // Draw paper
         paper.view.draw();
-
     });
 
 
@@ -194,6 +108,9 @@
 </script>
 </head>
 <body style="background: black url(img/bg.jpg) repeat -20px -10px; margin: 0; padding:0px;">
+
+    
+    <script>document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')</script>
 
     <!-- <svg id="ok"></svg> -->
 
@@ -271,42 +188,7 @@
             C-8.22,0.419-8.648-0.957-8.625-1.75"/>
         <path fill="none" stroke="#3D4665" stroke-miterlimit="10" d="M-1.125,3.625c-1.021,1.008-3.559,2.117-4.75,0.75"/>
     </svg>
-
-    <svg style="display:none;" version="1.1" id="headphone" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-         width="595.28px" height="841.89px" xml:space="preserve">
-        <path fill="#010101" d="M11.771-0.958c0-6.144-5.531-7.5-10.812-7.5s-11.125,1.356-11.125,7.5l1.625,2.75
-    c0-6.144,4.219-7.625,9.5-7.625s9.625,1.481,9.625,7.625L11.771-0.958z"/>
-        <path fill="#FFFFFF" stroke="#010101" stroke-miterlimit="10" d="M-9.98,6.822c0-2.698,0.97-5.169,2.577-7.088
-            c-0.72-0.429-1.552-0.692-2.451-0.692c-2.658,0-4.812,2.154-4.812,4.812s2.155,4.812,4.812,4.812c0.014,0,0.026-0.004,0.04-0.004
-            C-9.915,8.063-9.98,7.45-9.98,6.822z"/>
-        <path fill="#FFFFFF" stroke="#010101" stroke-miterlimit="10" d="M11.771-0.958c-0.839,0-1.615,0.234-2.303,0.611
-            c1.65,1.93,2.651,4.431,2.651,7.169c0,0.624-0.063,1.23-0.163,1.826c2.57-0.1,4.627-2.2,4.627-4.794
-            C16.583,1.196,14.429-0.958,11.771-0.958z"/>
-    </svg>
     
-    <svg style="display:none;" version="1.1" id="dj" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-         width="595.28px" height="841.89px" xml:space="preserve">
-        <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M-4.079-0.771C-3.591-0.179-3.361,2.1-3.454,2.854"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M9.046,3.354c0.646-0.725,1.67-2.012,2-2.875"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M6.796,2.354c0.871-1.169,2.099-2.2,2.5-3.625"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M4.421,2.604c0.624-1.394-0.113-4.261,2-4.5"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M2.421,1.979c0.91-1.242,0.875-2.539,0.875-4"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M0.421,2.604c0.372-1.654,0.25-3.434,0.25-5.125"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M-1.829,2.604c0.884-1.247,0.753-3.405,0.5-4.875"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M6.171,0.354c2.562,0.371,1.819-2.267,2.625-3.5"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M3.796-1.146c-0.01-1.897,0.971-3.807-0.125-5.625"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M1.171-0.646c1.361-1.988,0.489-4.065-0.375-6"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M-0.579-0.521c0-1.86,0.268-5.128-1.5-6.375"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M-2.829,0.104c-0.006-2.406-0.226-4.283-2.25-5.75"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M-2.954,3.354c-0.892-0.182-0.948-1.432-1.437-2.1
-        c-0.388-0.53-1.055-0.948-1.438-1.525"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M-4.454,5.104c-0.472-0.762-1.193-1.449-1.5-2.375"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M1.171,3.854c0.302-1.145,0.473-2.982,0.5-4.125"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M3.296,4.354c0.286-0.897,0.735-1.775,1.125-2.5"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M6.671,4.479c1.219-1.297,2.05-1.611,2-3.5"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M8.796,5.104c1.101-0.342,2.412-1.499,2.25-2.75"/>
-    <path fill="none" stroke="#231F20" stroke-miterlimit="10" d="M9.171,0.479c1.354-1.81,2.501-3.308,2.5-5.625"/>
-    </svg>
 
 
     <div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -329,10 +211,7 @@
   </div>
   <div class="modal-footer">
     <!-- <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button> -->
-    <button id="start1" class="btn">Start &#9733;</button>
-    <button id="start2" class="btn">Start &#9733; &#9733;</button>
-    <button id="start3" class="btn btn-primary">Start &#9733; &#9733; &#9733;</button>
-    <button id="startAnim" class="btn">With animation</button>
+    <button id="start" class="btn btn-primary">Start</button>
   </div>
 </div>
 
@@ -345,11 +224,12 @@
   <div class="modal-body">
     <div  style="width:500px;">
         
-            <h1 style="font-size: 90px; line-height: 100px;">F&eacute;licitation!</h1>
-            <p style="font-size: 20px; line-height: 25px;text-align:center;">Tu as trouv&eacute; Max &ndash; the DJ en <span id="yourtime"> </span> secondes</p>
-
-            <p style="width:70%;margin-right:auto;margin-left:auto;text-align:center;">Tu peux maintenant rejouer une partie pour sauver Max the DJ dans une autre soir&eacute;e.</p>
+            <h1>F&eacute;licitation!</h1>
+            <p>Tu as trouv&eacute; Max &ndash; the DJ!</p>
     
+        <div class="pull-right" style="width:40%; overflow:hidden;">
+            <canvas id="max" width="200" height="200" style="margin-top: -20px;"></canvas>
+        </div>
         <div class="clearfix"></div>
     </div>
   </div>
@@ -357,15 +237,6 @@
     <!-- <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button> -->
     <button id="restart" class="btn btn-primary">Re start</button>
   </div>
-</div>
-
-<div id="watch">
-    <div id="m" class="pull-left">00</div>
-    <div class="pull-left point">.</div>
-    <div id="s" class="pull-left">00</div>
-    <div class="pull-left point">.</div>
-    <div id="ms" class="pull-left">00</div>
-    
 </div>
 
 

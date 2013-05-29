@@ -74,8 +74,10 @@ with (paper){
         var amplitude_shake = 0.5;
 
         // For the color.... to be moved somewhere else:
-        // 
         var colors = null;
+
+        // For the animation:
+        var tick = function(){};
 
         // Constructor:
         var init = function(){
@@ -109,7 +111,8 @@ with (paper){
 
             });
             
-            
+            __dancer__.addChildren([head, left_arm, right_arm, body])
+                
             return __dancer__;
 
         }
@@ -125,11 +128,56 @@ with (paper){
         // generate DJ:
         __dancer__.generateDJ = function(){
 
+            colors = {
+                short: ['#3D4665', '#548395'],
+                flesh: '#d3d8e1'
+            };
+
+            // Properties of the DJ
+            head.remove();
+            head = new Head({
+                'eye': 'glass2',
+                'hair': 'dj'
+            });
+
+            body.remove();
+            body = new Body({
+                type: 'square'
+            });
+
+
+            left_arm.remove();
+            left_arm = new Arm();
+
+            __dancer__.addChildren([head, left_arm, body]);
+
+            tick = function(){
+                left_arm.rotate.set(0.6);
+                left_arm.foldElbow.set(0.9);
+                right_arm.rotate.set(0.6);
+            };
+
+            /////////////////////////
+            // ANIMATIONS
+
+            // Arm that holds the speakes:
+            left_arm.rotate.set(0.6);
+            left_arm.foldElbow.set(0.9);
+            right_arm.rotate.set(0.6);
+
+            // Arm that dance:
+            dances.left_elbow =  new Loop().add([{ 'end': 0.0, 'init': 0.6, 'Movement': right_arm.foldElbow}]);
+            dances.left_rotate =  new Loop().add([{ 'end': 0.9, 'init': 0.5, 'Movement': right_arm.rotate}]);
+                        
+            // Body movements
             dances.body_shake =  new Loop().add([{ 'end': 1, 'Movement': body.shake}]);
             dances.body_jump =  new Loop().add([{ 'end': 1, 'Movement': body.jump}]);
             dances.head_jump =  new Loop().add([{ 'end': 1, 'Movement': head.jump}]);
             dances.left_jump =  new Loop().add([{ 'end': 1, 'Movement': left_arm.jump}]);
             dances.right_jump =  new Loop().add([{ 'end': 1, 'Movement': right_arm.jump}]);
+            
+            
+            head.bringToFront();
 
             return __dancer__;
         }  
@@ -200,6 +248,11 @@ with (paper){
         });
 
 
+        __dancer__.__defineGetter__('base', function(){
+            return base;
+        });
+
+
         __dancer__.startDance = function(){
             $.each(dances, function(i, dance){
                 dance.start();
@@ -207,14 +260,26 @@ with (paper){
             return __dancer__;
         }
 
-        __dancer__.move = function(newpos){
+        __dancer__.setRandomPose = function(){
+            $.each(dances, function(i, dance){
+                dance.setRandom();
+            });
+            return __dancer__;
+        }
+
+        __dancer__.move = function(newpos, _duration){
+            var duration = _duration || 500;
             var oldpos = base;
-            return new Movement(0.0, 1.0, function(val){
+            var m = new Movement(0.0, 1.0, function(val){
                 
                 base = newpos.multiply(val).add(oldpos.multiply(1.0 - val)); 
                 __dancer__.emit('change:base');
 
-            }).start();
+            });
+            m.on('tick', function(){
+                tick();
+            })
+            return m.start(0.0, 1.0, duration);
         }
 
         //////////////////////////////////////////////
@@ -247,7 +312,7 @@ with (paper){
             
             left_arm = new Arm();
             var rightset = {
-                 anchor: new Point(-110, 0),
+                 anchor: new Point(-90, 0),
                  type: 'arm_right'
             };
             
@@ -384,7 +449,7 @@ with (paper){
                     min: 0,
                     modifVal: function(a){ return a; }
                 },
-                anchor: new Point(110,0),
+                anchor: new Point(90,0),
                 type: 'arm_left'
             };
 
@@ -431,11 +496,12 @@ with (paper){
 
             // Jump with the body:
              _arm.jump = new Movement( -amplitude_shake, amplitude_shake , function(val){
-                
-                pt.begin = base.subtract( settings.anchor.multiply(scale).add( (new Point(  0, -50)).multiply(scale * val ) ) ) ;
-                pt.elbow = pt.begin.add(  settings.elbow.multiply(scale));
-                pt.end = pt.elbow.add(    settings.end.multiply(scale));
-                _arm.pt = pt;
+                var splus = new Point(  0, -10 * (Math.abs(val) - amplitude_shake/2) * scale );
+            
+                pt.begin = pt.begin.add( splus ) ;
+                pt.elbow = pt.elbow.add(  splus);
+                pt.end = pt.end.add(    splus);
+
 
                 myfront.emit('change');
                 myback.emit('change');
@@ -912,6 +978,7 @@ with (paper){
 
         // Parse the hairs:
         var hairsSVG = parseSVG(['cheveux1', 'cheveux2', 'cheveux3', 'cheveux4', 'cheveux5'] );
+        var djSVG = parseSVG(['dj', 'headphone'] );
 
         //////////////////////////////////////////////
         // 
@@ -952,6 +1019,7 @@ with (paper){
                     case 'punk2': makePunk2(0); break;
                     case 'punk4': makePunk2(1); break;
                     case 'coince2': makeCoince2(1); break;
+                    case 'dj': dj(); break;
                 }
                 
             }
@@ -975,12 +1043,34 @@ with (paper){
                 }
                 
             }
+            // Make hair for the dj:
+            var dj = function(){
+                var cheveux = djSVG[0].clone();
+                cheveux.translate(head_center.subtract(new Point(10*scale, 60*scale))).scale(6.5).scale(scale);
+                cheveux.style= {
+                    strokeColor: 'black',
+                    strokeWidth: 1.0
+                };
 
+                __head__.addChild(cheveux);
+                cheveux.bringToFront();
+
+                var headphone = djSVG[1].clone();
+                headphone.translate(head_center.subtract(new Point(5*scale, 45*scale))).scale(5.8).scale(scale);
+                headphone.style = {
+                    strokeColor: 'black',
+                    strokeWidth: 0.5,
+                    fillColor: colors.short[0]
+                };
+                __head__.addChild(headphone);
+
+                headphone.bringToFront();
+
+            }
             // Make normal hair:
-            
             var makeNormal = function(){
 
-                 var cheveux = hairsSVG[0].clone();
+                var cheveux = hairsSVG[0].clone();
                 cheveux.translate(head_center.subtract(new Point(10*scale, 60*scale))).scale(6.5).scale(scale);
                 cheveux.style= {
                     strokeColor: 'black',
