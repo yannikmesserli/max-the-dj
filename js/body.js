@@ -1301,8 +1301,9 @@ with (paper){
 
     function parseSVG(array){
         return array.map(function(id){
-
-            return project.importSVG($('#'+id)[0]);
+            var t = project.importSVG($('#'+id)[0]);
+            t.remove();
+            return t;
         });
     }
 }

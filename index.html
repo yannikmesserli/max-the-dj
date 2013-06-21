@@ -33,10 +33,18 @@
 
     paper.install(window);
     
+
+    // var loop = new Audio('loop.mp3'); 
+    // loop.addEventListener('ended', function() {
+    //     loop.currentTime = 0;
+    //     loop.play();
+    // }, false);
+    
     var timer = new Timer();
     
     var startAnim = function(){
         timer.reset();
+        //loop.play();
         $('<canvas id="myCanvas"></canvas>').appendTo('body').attr('resize', 'true');
         paper.setup('myCanvas');
 
@@ -48,6 +56,11 @@
 
             if(evPt.subtract(dj.base).length < 50){
                 timer.pause();
+
+                // Stop & reset the audio:
+                //loop.pause();
+                //loop.currentTime = 0;
+
                 $('#myCanvas').remove();
                 var mm = new Date(timer.getTime());
                 $('#yourtime').html( Math.round(timer.getTime()/ 1000) );
